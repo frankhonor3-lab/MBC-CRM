@@ -108,7 +108,7 @@ body { background: #080a10; }
     </div>
 
     <div style="margin-top:20px;text-align:center">
-      <a href="http://localhost:8787/index.html" style="font-size:12px;color:var(--t2)">← Back to Trading Platform</a>
+      <a href="../4.6/4.6/workspace/mbctrading/clone/index.html" style="font-size:12px;color:var(--t2)">← Back to Trading Platform</a>
     </div>
   </div>
 </div>
@@ -255,9 +255,40 @@ function seedData() {
   ];
   localStorage.setItem('mbc_crm_leads', JSON.stringify(leads));
 
-  // Assign demo client (Alex Morgan) to Sarah Connor if exists
-  const users = JSON.parse(localStorage.getItem('mbc_users') || '[]');
-  if (users.length > 0) {
+  // Create demo client if no users exist
+  const existingUsers = JSON.parse(localStorage.getItem('mbc_users') || '[]');
+  if (existingUsers.length === 0) {
+    const demoUser = {
+      id: 'demo_client_001',
+      firstName: 'Alex', lastName: 'Morgan',
+      email: 'alex.morgan@demo.com',
+      phone: '+1 646 555 0100',
+      registeredAt: new Date(Date.now() - 30 * 86400000).toISOString(),
+      assignedAgentId: 'stf_agent1',
+      assignedManagerId: 'stf_manager1',
+      crmStatus: 'active',
+      kycStatus: 'approved',
+      tags: ['VIP', 'First Deposit'],
+      totalDeposited: 50000,
+      ftdDate: new Date(Date.now() - 25 * 86400000).toISOString(),
+      ftdAmount: 50000,
+      lastActivity: new Date(Date.now() - 2 * 86400000).toISOString()
+    };
+    localStorage.setItem('mbc_users', JSON.stringify([demoUser]));
+    localStorage.setItem('mbc_portfolio_demo_client_001', JSON.stringify({
+      balance: 48750.33,
+      startBalance: 50000,
+      positions: [
+        { id:'pos_1', sym:'EUR/USD', symbol:'EURUSD', side:'buy', qty:10000, entry:1.0921, fillPrice:1.0921, pnl:143.50, openedAt:new Date(Date.now()-3*86400000).toISOString() }
+      ],
+      orders: [],
+      history: [
+        { type:'deposit', label:'DEPOSIT', sym:'USD', amount:50000, fillPrice:50000, qty:1, side:'credit', pnl:null, timestamp:new Date(Date.now()-25*86400000).toISOString(), time:Date.now()-25*86400000 }
+      ]
+    }));
+  } else {
+    // Assign existing unassigned users to demo agent and seed their portfolio
+    const users = existingUsers;
     users.forEach((u, i) => {
       if (!u.assignedAgentId) {
         users[i].assignedAgentId = 'stf_agent1';
@@ -269,27 +300,52 @@ function seedData() {
         users[i].ftdDate = users[i].ftdDate || new Date(Date.now()-14*86400000).toISOString();
         users[i].ftdAmount = users[i].ftdAmount || 50000;
       }
+      // Seed portfolio if missing
+      const pKey = 'mbc_portfolio_' + u.id;
+      if (!localStorage.getItem(pKey)) {
+        localStorage.setItem(pKey, JSON.stringify({
+          balance: u.totalDeposited || 50000,
+          startBalance: u.totalDeposited || 50000,
+          positions: [], orders: [],
+          history: [{ type:'deposit', label:'DEPOSIT', sym:'USD', amount:u.totalDeposited||50000, fillPrice:u.totalDeposited||50000, qty:1, side:'credit', pnl:null, timestamp:new Date().toISOString(), time:Date.now() }]
+        }));
+      }
     });
     localStorage.setItem('mbc_users', JSON.stringify(users));
   }
 
   // Seed sample notes and calls
   const notes = [
-    { id:'note_1', clientId:'demo001', authorId:'stf_agent1', authorName:'Sarah Connor', content:'Client called asking about withdrawals. Explained the KYC process and timeframes.', type:'call', createdAt:new Date(Date.now()-2*86400000).toISOString() },
-    { id:'note_2', clientId:'demo001', authorId:'stf_agent1', authorName:'Sarah Connor', content:'Sent educational material on options trading as requested.', type:'email', createdAt:new Date(Date.now()-86400000).toISOString() }
+    { id:'note_1', clientId:'demo_client_001', authorId:'stf_agent1', authorName:'Sarah Connor', content:'Client called asking about withdrawals. Explained the KYC process and timeframes.', type:'call', createdAt:new Date(Date.now()-2*86400000).toISOString() },
+    { id:'note_2', clientId:'demo_client_001', authorId:'stf_agent1', authorName:'Sarah Connor', content:'Sent educational material on options trading as requested.', type:'email', createdAt:new Date(Date.now()-86400000).toISOString() }
   ];
   localStorage.setItem('mbc_crm_notes', JSON.stringify(notes));
 
   const calls = [
-    { id:'call_1', clientId:'demo001', agentId:'stf_agent1', agentName:'Sarah Connor', duration:420, outcome:'interested', notes:'Client very interested in increasing position size. Suggested depositing more funds.', calledAt:new Date(Date.now()-2*86400000).toISOString() }
+    { id:'call_1', clientId:'demo_client_001', agentId:'stf_agent1', agentName:'Sarah Connor', duration:420, outcome:'interested', notes:'Client very interested in increasing position size. Suggested depositing more funds.', calledAt:new Date(Date.now()-2*86400000).toISOString() }
   ];
   localStorage.setItem('mbc_crm_calls', JSON.stringify(calls));
 
   const tasks = [
-    { id:'task_1', assignedTo:'stf_agent1', clientId:'demo001', title:'Follow up on deposit request', description:'Client mentioned they will deposit $5000 this week. Follow up.', priority:'high', status:'pending', dueAt:new Date(Date.now()+86400000).toISOString(), createdAt:now, completedAt:null },
+    { id:'task_1', assignedTo:'stf_agent1', clientId:'demo_client_001', title:'Follow up on deposit request', description:'Client mentioned they will deposit $5000 this week. Follow up.', priority:'high', status:'pending', dueAt:new Date(Date.now()+86400000).toISOString(), createdAt:now, completedAt:null },
     { id:'task_2', assignedTo:'stf_agent1', clientId:null, title:'Review new leads from Google Ads', description:'Check 3 new leads from campaign and assign priority.', priority:'medium', status:'pending', dueAt:new Date().toISOString(), createdAt:now, completedAt:null }
   ];
   localStorage.setItem('mbc_crm_tasks', JSON.stringify(tasks));
+
+  // Seed demo deposit request
+  const existingDeps = JSON.parse(localStorage.getItem('mbc_deposit_requests') || '[]');
+  if (existingDeps.length === 0) {
+    localStorage.setItem('mbc_deposit_requests', JSON.stringify([{
+      id: 'dep_demo_001',
+      userId: 'demo_client_001',
+      amount: 5000,
+      method: 'Wire Transfer',
+      status: 'pending',
+      requestDate: new Date(Date.now() - 86400000).toISOString(),
+      createdAt: new Date(Date.now() - 86400000).toISOString(),
+      notes: 'Wire transfer from client bank account'
+    }]));
+  }
 
   // Init audit log and notifications
   if (!localStorage.getItem('mbc_crm_audit_log')) localStorage.setItem('mbc_crm_audit_log', JSON.stringify([]));

@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Panel — MBCtrading CRM</title>
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
 .section { display:none; } .section.active { display:block; }
 .stat-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
@@ -503,7 +504,6 @@ select.filter-sel:focus { outline:none; }
 <!-- TOAST -->
 <div class="crm-toast-wrap" id="toastWrap"></div>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <script>
 // ─── AUTH GATE ───
 var currentStaff = null;
@@ -578,13 +578,14 @@ function renderDashboard(){
   users.forEach(u=>{ const p=getPortfolio(u.id); if(p) totalBalance+=(p.balance||0); totalDeposited+=(u.totalDeposited||0); if(u.ftdDate) ftdCount++; });
   const agents=staff.filter(s=>s.role==='agent'&&s.status==='active');
   const pendingDeps=deps.filter(d=>d.status==='pending');
-  const html=s=>`<div class="crm-stat"><div class="crm-stat-top"></div><div class="crm-stat-label">${s.l}</div><div class="crm-stat-val">${s.v}</div><div class="crm-stat-change ${s.up?'up':'dn'}">${s.c}</div></div>`;
+  const colors=['s-red','s-blue','s-green','s-gold'];
+  const html=(s,i)=>`<div class="crm-stat ${colors[i]||''}"><div class="crm-stat-top"></div><div class="crm-stat-label">${s.l}</div><div class="crm-stat-val">${s.v}</div><div class="crm-stat-change ${s.up?'up':'dn'}">${s.c}</div></div>`;
   document.getElementById('dashStats').innerHTML=[
     {l:'Total AUM',v:fmtMoney(totalBalance),c:'Live balance',up:true},
     {l:'Total Deposited',v:fmtMoney(totalDeposited),c:'All time',up:true},
     {l:'Registered Clients',v:users.length,c:ftdCount+' with FTD',up:true},
     {l:'Pending Deposits',v:pendingDeps.length,c:pendingDeps.length>0?'Needs review':'All clear',up:pendingDeps.length===0}
-  ].map(html).join('');
+  ].map((s,i)=>html(s,i)).join('');
 
   // Pending deposits
   const dHtml=pendingDeps.slice(0,5).map(d=>{
@@ -703,11 +704,19 @@ function openClientDrawer(uid){
   currentDrawerClient=uid;
   document.getElementById('drawerName').textContent=(u.firstName||'')+' '+(u.lastName||'');
   document.getElementById('drawerSub').textContent=u.email||uid;
-  document.getElementById('clientDrawer').style.display='block';
-  document.getElementById('drawerOverlay').style.display='block';
+  const drawer=document.getElementById('clientDrawer');
+  const overlay=document.getElementById('drawerOverlay');
+  drawer.style.display='flex'; overlay.style.display='block';
+  requestAnimationFrame(()=>{ drawer.classList.add('open'); overlay.classList.add('open'); });
   switchDrawerTab('overview',document.querySelector('.crm-drawer-tab'));
 }
-function closeDrawer(){ document.getElementById('clientDrawer').style.display='none'; document.getElementById('drawerOverlay').style.display='none'; currentDrawerClient=null; }
+function closeDrawer(){
+  const drawer=document.getElementById('clientDrawer');
+  const overlay=document.getElementById('drawerOverlay');
+  drawer.classList.remove('open'); overlay.classList.remove('open');
+  setTimeout(()=>{ drawer.style.display='none'; overlay.style.display='none'; },260);
+  currentDrawerClient=null;
+}
 function switchDrawerTab(tab,el){
   document.querySelectorAll('.crm-drawer-tab').forEach(t=>t.classList.remove('active'));
   if(el) el.classList.add('active');
@@ -975,13 +984,14 @@ function renderAnalytics(){
   approved.forEach(d=>totalDep+=Number(d.amount||0));
   users.forEach(u=>{ const p=getPortfolio(u.id); if(p) totalAUM+=(p.balance||0); if(u.ftdDate) ftdCount++; });
   avgDep=approved.length>0?(totalDep/approved.length):0;
-  const html=s=>`<div class="crm-stat"><div class="crm-stat-top"></div><div class="crm-stat-label">${s.l}</div><div class="crm-stat-val">${s.v}</div><div class="crm-stat-change up">${s.c}</div></div>`;
+  const aColors=['s-green','s-blue','s-gold','s-purple'];
+  const html=(s,i)=>`<div class="crm-stat ${aColors[i]||''}"><div class="crm-stat-top"></div><div class="crm-stat-label">${s.l}</div><div class="crm-stat-val">${s.v}</div><div class="crm-stat-change up">${s.c}</div></div>`;
   document.getElementById('analyticsStats').innerHTML=[
     {l:'Total Deposits (Approved)',v:fmtMoney(totalDep),c:approved.length+' transactions'},
     {l:'Live AUM',v:fmtMoney(totalAUM),c:'Across '+users.length+' clients'},
     {l:'Total FTDs',v:ftdCount,c:users.length>0?((ftdCount/users.length*100).toFixed(0)+'% conversion'):''},
     {l:'Avg. Deposit',v:fmtMoney(avgDep),c:'Per approved deposit'}
-  ].map(html).join('');
+  ].map((s,i)=>html(s,i)).join('');
   // Simple bar chart (last 6 months)
   const months=[]; for(let i=5;i>=0;i--){ const d=new Date(); d.setMonth(d.getMonth()-i); months.push({y:d.getFullYear(),m:d.getMonth(),label:d.toLocaleString('default',{month:'short'})}); }
   const monthTotals=months.map(mo=>approved.filter(d=>{ const dd=new Date(d.reviewedAt||d.requestDate||d.createdAt); return dd.getFullYear()===mo.y&&dd.getMonth()===mo.m; }).reduce((s,d)=>s+Number(d.amount||0),0));

@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Retention Manager — MBCtrading CRM</title>
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
 .section{display:none}.section.active{display:block}
 .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
@@ -207,7 +208,6 @@ select.filter-sel{padding:9px 12px;background:rgba(255,255,255,.06);border:1px s
 </div>
 
 <div class="crm-toast-wrap" id="toastWrap"></div>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <script>
 var currentStaff=null;
 (function(){
@@ -249,13 +249,14 @@ function doLogout(){localStorage.removeItem('mbc_crm_session');window.location.h
 function renderDashboard(){
   const users=getUsers();const calls=getCalls().filter(c=>c.agentId===currentStaff.id);
   const dormantList=users.filter(u=>daysInactive(u)>=7);
-  const html=s=>`<div class="crm-stat"><div class="crm-stat-top"></div><div class="crm-stat-label">${s.l}</div><div class="crm-stat-val">${s.v}</div><div class="crm-stat-change ${s.up?'up':'dn'}">${s.c}</div></div>`;
+  const rColors=['s-blue','s-gold','s-green','s-red'];
+  const html=(s,i)=>`<div class="crm-stat ${rColors[i]||''}"><div class="crm-stat-top"></div><div class="crm-stat-label">${s.l}</div><div class="crm-stat-val">${s.v}</div><div class="crm-stat-change ${s.up?'up':'dn'}">${s.c}</div></div>`;
   document.getElementById('dashStats').innerHTML=[
     {l:'Total Clients',v:users.length,c:'Platform wide',up:true},
     {l:'At Risk (7d+)',v:dormantList.length,c:'Need attention',up:dormantList.length===0},
     {l:'My Calls',v:calls.length,c:'Logged',up:true},
     {l:'Dormant (30d+)',v:users.filter(u=>daysInactive(u)>=30).length,c:'Serious risk',up:false}
-  ].map(html).join('');
+  ].map((s,i)=>html(s,i)).join('');
   // Top dormant
   const topDormant=users.filter(u=>daysInactive(u)>=7).sort((a,b)=>daysInactive(b)-daysInactive(a)).slice(0,6);
   document.getElementById('dashDormant').innerHTML=topDormant.map(u=>{const d=daysInactive(u);const tier=dormancyTier(d);const p=getPortfolio(u.id)||{balance:0};return `<div class="timeline-item"><div class="timeline-dot ${d>=30?'':'gold'}"></div><div style="flex:1"><div style="font-size:13px;font-weight:600">${escHTML(u.firstName+' '+u.lastName)}</div><div style="font-size:11px;color:var(--t2)">${fmtMoney(p.balance)} · ${d}d inactive</div></div><span class="badge ${tier.cls}" style="font-size:10px">${tier.label}</span></div>`; }).join('')||'<div style="padding:16px;text-align:center;color:var(--up);font-size:13px">No dormant clients</div>';
@@ -346,8 +347,8 @@ function quickClientSearch(){
 
 // CLIENT DRAWER
 var currentDrawerClient=null;
-function openClientDrawer(uid){const u=getUsers().find(x=>x.id===uid);if(!u)return;currentDrawerClient=uid;document.getElementById('drawerName').textContent=u.firstName+' '+u.lastName;document.getElementById('drawerSub').textContent=u.email||uid;document.getElementById('clientDrawer').style.display='block';document.getElementById('drawerOverlay').style.display='block';switchDrawerTab('overview',document.querySelector('.crm-drawer-tab'));}
-function closeDrawer(){document.getElementById('clientDrawer').style.display='none';document.getElementById('drawerOverlay').style.display='none';currentDrawerClient=null;}
+function openClientDrawer(uid){const u=getUsers().find(x=>x.id===uid);if(!u)return;currentDrawerClient=uid;document.getElementById('drawerName').textContent=u.firstName+' '+u.lastName;document.getElementById('drawerSub').textContent=u.email||uid;const drawer=document.getElementById('clientDrawer');const overlay=document.getElementById('drawerOverlay');drawer.style.display='flex';overlay.style.display='block';requestAnimationFrame(()=>{drawer.classList.add('open');overlay.classList.add('open');});switchDrawerTab('overview',document.querySelector('.crm-drawer-tab'));}
+function closeDrawer(){const drawer=document.getElementById('clientDrawer');const overlay=document.getElementById('drawerOverlay');drawer.classList.remove('open');overlay.classList.remove('open');setTimeout(()=>{drawer.style.display='none';overlay.style.display='none';},260);currentDrawerClient=null;}
 function switchDrawerTab(tab,el){document.querySelectorAll('.crm-drawer-tab').forEach(t=>t.classList.remove('active'));if(el)el.classList.add('active');renderDrawerTab(tab);}
 function renderDrawerTab(tab){
   if(!currentDrawerClient)return;

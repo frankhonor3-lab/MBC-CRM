@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Manager Panel — MBCtrading CRM</title>
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
 .section{display:none}.section.active{display:block}
 .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
@@ -264,7 +265,6 @@ select.filter-sel{padding:9px 12px;background:rgba(255,255,255,.06);border:1px s
 </div>
 
 <div class="crm-toast-wrap" id="toastWrap"></div>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <script>
 var currentStaff=null;
 (function(){
@@ -311,13 +311,14 @@ function renderDashboard(){
   const myDeps=deps.filter(d=>clients.some(c=>c.id===d.userId));
   const totalDep=myDeps.filter(d=>d.status==='approved').reduce((s,d)=>s+Number(d.amount||0),0);
   const ftds=clients.filter(c=>c.ftdDate).length;
-  const html=s=>`<div class="crm-stat"><div class="crm-stat-top"></div><div class="crm-stat-label">${s.l}</div><div class="crm-stat-val">${s.v}</div><div class="crm-stat-change up">${s.c}</div></div>`;
+  const colors=['s-blue','s-green','s-gold','s-red'];
+  const html=(s,i)=>`<div class="crm-stat ${colors[i]||''}"><div class="crm-stat-top"></div><div class="crm-stat-label">${s.l}</div><div class="crm-stat-val">${s.v}</div><div class="crm-stat-change up">${s.c}</div></div>`;
   document.getElementById('dashStats').innerHTML=[
     {l:'My Agents',v:agents.length,c:'Active team members'},
     {l:'Total Clients',v:clients.length,c:'Across all agents'},
     {l:'FTDs',v:ftds,c:clients.length>0?((ftds/clients.length*100).toFixed(0)+'% rate'):''},
     {l:'Team Deposits',v:fmtMoney(totalDep),c:'Approved total'}
-  ].map(html).join('');
+  ].map((s,i)=>html(s,i)).join('');
   // Pending deposits
   const pending=deps.filter(d=>d.status==='pending'&&clients.some(c=>c.id===d.userId));
   const users=getUsers();
@@ -384,8 +385,8 @@ function renderClients(){
 
 // CLIENT DRAWER
 var currentDrawerClient=null;
-function openClientDrawer(uid){const u=getUsers().find(x=>x.id===uid);if(!u)return;currentDrawerClient=uid;document.getElementById('drawerName').textContent=u.firstName+' '+u.lastName;document.getElementById('drawerSub').textContent=u.email||uid;document.getElementById('clientDrawer').style.display='block';document.getElementById('drawerOverlay').style.display='block';switchDrawerTab('overview',document.querySelector('.crm-drawer-tab'));}
-function closeDrawer(){document.getElementById('clientDrawer').style.display='none';document.getElementById('drawerOverlay').style.display='none';currentDrawerClient=null;}
+function openClientDrawer(uid){const u=getUsers().find(x=>x.id===uid);if(!u)return;currentDrawerClient=uid;document.getElementById('drawerName').textContent=u.firstName+' '+u.lastName;document.getElementById('drawerSub').textContent=u.email||uid;const drawer=document.getElementById('clientDrawer');const overlay=document.getElementById('drawerOverlay');drawer.style.display='flex';overlay.style.display='block';requestAnimationFrame(()=>{drawer.classList.add('open');overlay.classList.add('open');});switchDrawerTab('overview',document.querySelector('.crm-drawer-tab'));}
+function closeDrawer(){const drawer=document.getElementById('clientDrawer');const overlay=document.getElementById('drawerOverlay');drawer.classList.remove('open');overlay.classList.remove('open');setTimeout(()=>{drawer.style.display='none';overlay.style.display='none';},260);currentDrawerClient=null;}
 function switchDrawerTab(tab,el){document.querySelectorAll('.crm-drawer-tab').forEach(t=>t.classList.remove('active'));if(el)el.classList.add('active');renderDrawerTab(tab);}
 function renderDrawerTab(tab){
   if(!currentDrawerClient)return;
@@ -461,13 +462,14 @@ function renderPerformance(){
   const agents=getMyAgents();const clients=getUsers();const leads=getLeads();
   let totalFTD=0,totalDep=0;
   agents.forEach(a=>{const ac=clients.filter(c=>c.assignedAgentId===a.id);ac.forEach(c=>{if(c.ftdDate)totalFTD++;totalDep+=(c.totalDeposited||0);});});
-  const html=s=>`<div class="crm-stat"><div class="crm-stat-top"></div><div class="crm-stat-label">${s.l}</div><div class="crm-stat-val">${s.v}</div><div class="crm-stat-change up">${s.c}</div></div>`;
+  const pColors=['s-blue','s-green','s-gold','s-red'];
+  const html=(s,i)=>`<div class="crm-stat ${pColors[i]||''}"><div class="crm-stat-top"></div><div class="crm-stat-label">${s.l}</div><div class="crm-stat-val">${s.v}</div><div class="crm-stat-change up">${s.c}</div></div>`;
   document.getElementById('perfStats').innerHTML=[
     {l:'Team Agents',v:agents.length,c:'Active'},
     {l:'Total Clients',v:getMyClients().length,c:'Managed'},
     {l:'Team FTDs',v:totalFTD,c:'First deposits'},
     {l:'Team Revenue',v:fmtMoney(totalDep),c:'Total deposited'}
-  ].map(html).join('');
+  ].map((s,i)=>html(s,i)).join('');
   const rows=agents.map(a=>{const ac=clients.filter(c=>c.assignedAgentId===a.id).length;const aFtd=clients.filter(c=>c.assignedAgentId===a.id&&c.ftdDate).length;const aLeads=leads.filter(l=>l.assignedAgentId===a.id).length;const aDep=clients.filter(c=>c.assignedAgentId===a.id).reduce((s,c)=>s+(c.totalDeposited||0),0);const conv=aLeads>0?((aFtd/aLeads)*100).toFixed(0)+'%':'—';return {a,ac,aFtd,aLeads,aDep,conv};}).sort((x,y)=>y.aFtd-x.aFtd);
   document.getElementById('perfTbody').innerHTML=rows.map((r,i)=>`<tr><td style="font-weight:700;color:var(--t2)">#${i+1}</td><td><div style="font-weight:600">${escHTML(r.a.firstName)} ${escHTML(r.a.lastName)}</div></td><td>${r.ac}</td><td>${r.aLeads}</td><td style="color:var(--up);font-weight:700">${r.aFtd}</td><td style="font-weight:700">${fmtMoney(r.aDep)}</td><td>${r.conv}</td></tr>`).join('')||`<tr><td colspan="7"><div class="empty-state"><i class="fas fa-chart-bar"></i>No agents</div></td></tr>`;
 }

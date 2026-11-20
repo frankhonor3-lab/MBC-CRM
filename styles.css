@@ -657,6 +657,92 @@ input, select, textarea { font-family: var(--font); }
 .mt-8 { margin-top: 8px; }
 .mt-16 { margin-top: 16px; }
 .mt-24 { margin-top: 24px; }
+
+/* ─── COMPATIBILITY LAYER (HTML naming conventions) ─── */
+
+/* Sidebar nav — HTML uses .crm-sidebar-nav and .crm-nav-item */
+.crm-sidebar-nav { padding: 10px 0; flex: 1; overflow-y: auto; }
+.crm-nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 16px; margin: 1px 8px;
+  border-radius: var(--radius); font-size: 13px; font-weight: 500;
+  color: rgba(232,236,240,.55); transition: all .12s;
+  position: relative; cursor: pointer;
+}
+.crm-nav-item:hover { background: rgba(255,255,255,.05); color: #fff; }
+.crm-nav-item.active { background: rgba(217,18,34,.1); color: #fff; }
+.crm-nav-item i { width: 16px; text-align: center; flex-shrink: 0; }
+
+/* Sidebar logo inline text */
+.crm-sidebar-logo { display: block; padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,.06); font-size: 17px; font-weight: 700; letter-spacing: -0.3px; color: #fff; flex-shrink: 0; }
+.crm-sidebar-logo span:first-of-type { color: var(--red); }
+.crm-sidebar-logo-tag {
+  font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+  background: rgba(217,18,34,.2); color: var(--red);
+  padding: 2px 6px; border-radius: 3px; margin-left: 8px; vertical-align: middle;
+}
+
+/* Sidebar footer — HTML uses .crm-sidebar-user etc */
+.crm-sidebar-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 14px 16px; border-top: 1px solid rgba(255,255,255,.06); flex-shrink: 0; }
+.crm-sidebar-user { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+.crm-sidebar-user-info { flex: 1; min-width: 0; }
+.crm-sidebar-user-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.crm-sidebar-user-role { font-size: 11px; color: var(--t3); text-transform: capitalize; }
+.crm-sidebar-logout {
+  background: none; border: none; color: var(--t2); cursor: pointer;
+  padding: 7px 9px; border-radius: var(--radius); transition: all .12s;
+  font-size: 14px; flex-shrink: 0; line-height: 1;
+}
+.crm-sidebar-logout:hover { background: rgba(239,83,80,.1); color: var(--dn); }
+
+/* Layout wrapper — HTML wraps topbar+main in .crm-main-wrap */
+.crm-main-wrap {
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  grid-column: 2; grid-row: 1 / -1;
+}
+
+/* Topbar actions */
+.crm-topbar-actions { display: flex; align-items: center; gap: 10px; }
+
+/* Stat card — JS renders crm-stat-top / crm-stat-val / crm-stat-change */
+.crm-stat-top { display: none; } /* ::before pseudo-element handles the accent bar */
+.crm-stat-val { font-size: 28px; font-weight: 700; color: var(--text); letter-spacing: -1px; font-family: var(--font-data); }
+.crm-stat-change { font-size: 11px; color: var(--t2); margin-top: 4px; }
+.crm-stat-change.up { color: var(--up); }
+.crm-stat-change.dn { color: var(--dn); }
+
+/* Badge status variants — JS uses these exact class names */
+.badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 100px; font-size: 10px; font-weight: 700; text-transform: capitalize; }
+.badge-active  { background: rgba(38,201,163,.12); color: var(--up); border: 1px solid rgba(38,201,163,.2); }
+.badge-blocked { background: rgba(239,83,80,.12); color: var(--dn); border: 1px solid rgba(239,83,80,.2); }
+.badge-dormant { background: rgba(255,255,255,.07); color: var(--t2); border: 1px solid rgba(255,255,255,.1); }
+.badge-inactive{ background: rgba(255,255,255,.05); color: var(--t3); border: 1px solid rgba(255,255,255,.08); }
+
+/* Toast — JS adds .show and uses crm-toast-success / crm-toast-error class names */
+.crm-toast { opacity: 0; transform: translateX(40px); transition: opacity .2s ease, transform .2s ease; }
+.crm-toast.show { opacity: 1; transform: translateX(0); }
+.crm-toast-success { border-color: rgba(38,201,163,.35); }
+.crm-toast-error   { border-color: rgba(239,83,80,.35); }
+
+/* Drawer header — HTML uses crm-drawer-title / crm-drawer-sub */
+.crm-drawer-title { font-size: 16px; font-weight: 700; color: var(--text); }
+.crm-drawer-sub   { font-size: 12px; color: var(--t2); margin-top: 3px; }
+
+/* Nav notification badge */
+.crm-badge {
+  margin-left: auto; background: var(--red); color: #fff;
+  font-size: 10px; padding: 1px 6px; border-radius: 100px;
+  font-weight: 700; min-width: 18px; text-align: center;
+}
+
+/* Text link */
+.text-link { font-size: 12px; color: var(--blue); cursor: pointer; transition: color .15s; }
+.text-link:hover { color: #7ec8ff; }
+
+/* Performance bar row */
+.perf-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.04); }
+.perf-row:last-child { border-bottom: none; }
 .mb-16 { margin-bottom: 16px; }
 .flex { display: flex; }
 .flex-center { display: flex; align-items: center; }
