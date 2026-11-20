@@ -346,19 +346,33 @@ function seedData() {
   ];
   localStorage.setItem('mbc_crm_tasks', JSON.stringify(tasks));
 
-  // Seed demo deposit request
+  // Seed demo deposit requests
   const existingDeps = JSON.parse(localStorage.getItem('mbc_deposit_requests') || '[]');
   if (existingDeps.length === 0) {
-    localStorage.setItem('mbc_deposit_requests', JSON.stringify([{
-      id: 'dep_demo_001',
-      userId: seedClientId,
-      amount: 5000,
-      method: 'Wire Transfer',
-      status: 'pending',
-      requestDate: new Date(Date.now() - 86400000).toISOString(),
-      createdAt: new Date(Date.now() - 86400000).toISOString(),
-      notes: 'Wire transfer from client bank account'
-    }]));
+    localStorage.setItem('mbc_deposit_requests', JSON.stringify([
+      {
+        id: 'dep_demo_000',
+        userId: seedClientId,
+        amount: 50000,
+        method: 'Wire Transfer',
+        status: 'approved',
+        requestDate: new Date(Date.now() - 14 * 86400000).toISOString(),
+        createdAt: new Date(Date.now() - 14 * 86400000).toISOString(),
+        reviewedBy: 'admin',
+        reviewedAt: new Date(Date.now() - 14 * 86400000 + 3600000).toISOString(),
+        notes: 'Initial funding wire transfer'
+      },
+      {
+        id: 'dep_demo_001',
+        userId: seedClientId,
+        amount: 5000,
+        method: 'Wire Transfer',
+        status: 'pending',
+        requestDate: new Date(Date.now() - 86400000).toISOString(),
+        createdAt: new Date(Date.now() - 86400000).toISOString(),
+        notes: 'Wire transfer from client bank account'
+      }
+    ]));
   }
 
   if (!localStorage.getItem('mbc_crm_notifications')) localStorage.setItem('mbc_crm_notifications', JSON.stringify([]));

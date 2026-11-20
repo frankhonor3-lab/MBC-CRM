@@ -237,10 +237,10 @@ select.filter-sel{padding:9px 12px;background:rgba(255,255,255,.06);border:1px s
 var currentStaff=null;
 (function(){
   var sess=null;try{sess=JSON.parse(localStorage.getItem('mbc_crm_session')||'null');}catch(e){}
-  if(!sess||sess.role!=='agent'||(Date.now()-sess.time>8*3600*1000)){window.location.href='index.html';return;}
+  if(!sess||sess.role!=='agent'||(Date.now()-sess.time>8*3600*1000)){localStorage.removeItem('mbc_crm_session');window.location.href='index.html';return;}
   var staff=JSON.parse(localStorage.getItem('mbc_crm_staff')||'[]');
   currentStaff=staff.find(s=>s.id===sess.id)||null;
-  if(!currentStaff){window.location.href='index.html';return;}
+  if(!currentStaff){localStorage.removeItem('mbc_crm_session');window.location.href='index.html';return;}
   document.getElementById('sidebarName').textContent=currentStaff.firstName+' '+currentStaff.lastName;
   document.getElementById('sidebarAvatar').textContent=currentStaff.firstName[0];
   document.getElementById('topbarDate').textContent=new Date().toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
@@ -535,10 +535,11 @@ function placeTradeAsAgent(uid){
 }
 
 // ─── REALTIME SYNC ───
-const crmBC=new BroadcastChannel('mbc-crm-sync');
-crmBC.onmessage=function(e){if(e.data&&e.data.action){const active=document.querySelector('.section.active');if(active){const id=active.id.replace('sec-','');const r={dashboard:renderDashboard,clients:renderClients,leads:renderLeads,tasks:renderTasks};if(r[id])r[id]();}}};
-
-renderDashboard();
+if(currentStaff){
+  const crmBC=new BroadcastChannel('mbc-crm-sync');
+  crmBC.onmessage=function(e){if(e.data&&e.data.action){const active=document.querySelector('.section.active');if(active){const id=active.id.replace('sec-','');const r={dashboard:renderDashboard,clients:renderClients,leads:renderLeads,tasks:renderTasks};if(r[id])r[id]();}}};
+  renderDashboard();
+}
 </script>
 </body>
 </html>
