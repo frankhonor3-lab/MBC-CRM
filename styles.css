@@ -465,6 +465,7 @@ input, select, textarea { font-family: var(--font); }
 /* ─── AVATAR ─── */
 .crm-avatar {
   width: 32px; height: 32px; border-radius: 50%;
+  background: var(--red);
   display: inline-flex; align-items: center; justify-content: center;
   font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0;
 }

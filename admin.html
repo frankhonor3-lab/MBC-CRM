@@ -126,7 +126,7 @@ select.filter-sel:focus { outline:none; }
       <div class="crm-topbar-title" id="topbarTitle">Dashboard</div>
       <div class="crm-topbar-actions">
         <div id="topbarDate" style="font-size:12px;color:var(--t2)"></div>
-        <button class="btn btn-primary" onclick="openModal('addStaff')"><i class="fas fa-plus"></i> Add Staff</button>
+        <button class="btn btn-primary" onclick="openAddStaff()"><i class="fas fa-plus"></i> Add Staff</button>
       </div>
     </header>
 
@@ -175,20 +175,20 @@ select.filter-sel:focus { outline:none; }
       <!-- ═══════ CLIENTS ═══════ -->
       <div class="section" id="sec-clients">
         <div class="action-bar">
-          <input type="text" class="search-inp" id="clientSearch" placeholder="Search by name, email, ID…" oninput="renderClients()">
-          <select class="filter-sel" id="clientStatusFilter" onchange="renderClients()">
+          <input type="text" class="search-inp" id="clientSearch" placeholder="Search by name, email, ID…" oninput="clientPage=0;renderClients()">
+          <select class="filter-sel" id="clientStatusFilter" onchange="clientPage=0;renderClients()">
             <option value="">All Statuses</option>
             <option value="active">Active</option>
             <option value="dormant">Dormant</option>
             <option value="blocked">Blocked</option>
           </select>
-          <select class="filter-sel" id="clientKycFilter" onchange="renderClients()">
+          <select class="filter-sel" id="clientKycFilter" onchange="clientPage=0;renderClients()">
             <option value="">All KYC</option>
             <option value="approved">KYC Approved</option>
             <option value="pending">KYC Pending</option>
             <option value="not_started">Not Started</option>
           </select>
-          <select class="filter-sel" id="clientAgentFilter" onchange="renderClients()">
+          <select class="filter-sel" id="clientAgentFilter" onchange="clientPage=0;renderClients()">
             <option value="">All Agents</option>
           </select>
         </div>
@@ -566,7 +566,7 @@ function showSection(id,el){
   document.getElementById('sec-'+id).classList.add('active');
   document.querySelectorAll('.crm-nav-item').forEach(i=>i.classList.remove('active'));
   if(el) el.classList.add('active');
-  document.getElementById('topbarTitle').textContent = el ? el.textContent.trim() : id;
+  if(el){const c=el.cloneNode(true);c.querySelectorAll('span,i').forEach(s=>s.remove());document.getElementById('topbarTitle').textContent=c.textContent.trim();}else{document.getElementById('topbarTitle').textContent=id;}
   const renders = {dashboard:renderDashboard,clients:renderClients,leads:renderLeads,deposits:renderDeposits,agents:renderAgents,managers:renderManagers,retmanagers:renderRetManagers,analytics:renderAnalytics,audit:renderAudit,notifications:renderNotifications};
   if(renders[id]) renders[id]();
 }
@@ -1203,7 +1203,7 @@ function doLogout(){ localStorage.removeItem('mbc_crm_session'); window.location
 
 // ─── REALTIME SYNC ───
 const bc=new BroadcastChannel('mbc-crm-sync');
-bc.onmessage=function(e){ if(e.data&&e.data.action){ const active=document.querySelector('.section.active'); if(active) { const id=active.id.replace('sec-',''); const r={clients:renderClients,dashboard:renderDashboard,deposits:renderDeposits}; if(r[id]) r[id](); } } };
+bc.onmessage=function(e){ if(e.data&&e.data.action){ const active=document.querySelector('.section.active'); if(active){ const id=active.id.replace('sec-',''); const r={clients:renderClients,dashboard:renderDashboard,deposits:renderDeposits,leads:renderLeads,agents:renderAgents,managers:renderManagers,retmanagers:renderRetManagers,analytics:renderAnalytics,audit:renderAudit,notifications:renderNotifications}; if(r[id]) r[id](); } } };
 
 // ─── INIT ───
 renderDashboard();

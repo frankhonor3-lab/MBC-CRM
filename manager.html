@@ -302,7 +302,7 @@ function broadcastCRMAction(action,payload){const bc=new BroadcastChannel('mbc-c
 function toast(msg,type='info'){const wrap=document.getElementById('toastWrap');const el=document.createElement('div');el.className='crm-toast'+(type==='success'?' crm-toast-success':type==='error'?' crm-toast-error':'');el.textContent=msg;wrap.appendChild(el);setTimeout(()=>el.classList.add('show'),10);setTimeout(()=>{el.classList.remove('show');setTimeout(()=>el.remove(),400);},3500);}
 function openModal(id){document.getElementById('modal-'+id).style.display='flex';}
 function closeModal(id){document.getElementById('modal-'+id).style.display='none';}
-function showSection(id,el){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.getElementById('sec-'+id).classList.add('active');document.querySelectorAll('.crm-nav-item').forEach(i=>i.classList.remove('active'));if(el)el.classList.add('active');document.getElementById('topbarTitle').textContent=el?el.textContent.trim():id;const renders={dashboard:renderDashboard,agents:renderAgents,clients:renderClients,leads:renderLeads,deposits:renderDeposits,performance:renderPerformance};if(renders[id])renders[id]();}
+function showSection(id,el){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.getElementById('sec-'+id).classList.add('active');document.querySelectorAll('.crm-nav-item').forEach(i=>i.classList.remove('active'));if(el)el.classList.add('active');if(el){const c=el.cloneNode(true);c.querySelectorAll('span,i').forEach(s=>s.remove());document.getElementById('topbarTitle').textContent=c.textContent.trim();}else{document.getElementById('topbarTitle').textContent=id;}const renders={dashboard:renderDashboard,agents:renderAgents,clients:renderClients,leads:renderLeads,deposits:renderDeposits,performance:renderPerformance};if(renders[id])renders[id]();}
 function doLogout(){localStorage.removeItem('mbc_crm_session');window.location.href='index.html';}
 
 // DASHBOARD
@@ -498,6 +498,10 @@ function executeBalanceAdj(){
 
 // REASSIGN
 function reassignClient(uid){const agents=getMyAgents();const sel=prompt('Reassign to agent (enter agent ID):\n'+agents.map(a=>a.id+': '+a.firstName+' '+a.lastName).join('\n'));if(!sel)return;const users=getUsers();const idx=users.findIndex(u=>u.id===uid);if(idx<0)return;users[idx].assignedAgentId=sel;ls('mbc_users',users);logAudit('assign','Client reassigned to '+sel,uid);broadcastCRMAction('client_reassigned',{userId:uid,agentId:sel});toast('Client reassigned','success');renderClients();}
+
+// ─── REALTIME SYNC ───
+const crmBC=new BroadcastChannel('mbc-crm-sync');
+crmBC.onmessage=function(e){if(e.data&&e.data.action){const active=document.querySelector('.section.active');if(active){const id=active.id.replace('sec-','');const r={dashboard:renderDashboard,agents:renderAgents,clients:renderClients,leads:renderLeads,deposits:renderDeposits,performance:renderPerformance};if(r[id])r[id]();}}};
 
 renderDashboard();
 </script>

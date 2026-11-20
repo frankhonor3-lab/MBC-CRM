@@ -166,7 +166,8 @@ async function doLogin() {
       showError('Invalid admin credentials.'); btn.innerHTML = 'Sign In as <span id="loginRoleLabel">Admin</span>'; btn.disabled=false; return;
     }
     const hash = await hashStr(pw);
-    if (hash !== ADMIN_PW_HASH) {
+    const pwOverride = localStorage.getItem('mbc_admin_pw_override');
+    if (hash !== ADMIN_PW_HASH && hash !== pwOverride) {
       showError('Invalid admin credentials.'); btn.innerHTML = 'Sign In as <span id="loginRoleLabel">Admin</span>'; btn.disabled=false; return;
     }
     localStorage.setItem('mbc_crm_session', JSON.stringify({ id:'admin', username:'admin', role:'admin', time:Date.now() }));

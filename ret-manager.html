@@ -196,7 +196,7 @@ select.filter-sel{padding:9px 12px;background:rgba(255,255,255,.06);border:1px s
   <div class="crm-modal">
     <h4>Log Call / Note</h4>
     <div class="form-group"><label>Client</label><select class="filter-sel" id="callClientSel" style="width:100%"><option value="">Select client…</option></select></div>
-    <div class="form-group"><label>Type</label><select class="filter-sel" id="callType" style="width:100%"><option value="call">Call</option><option value="note">Note</option><option value="email">Email</option></select></div>
+    <div class="form-group"><label>Type</label><select class="filter-sel" id="callType" style="width:100%" onchange="document.getElementById('callDurationWrap').style.display=this.value==='call'?'block':'none'"><option value="call">Call</option><option value="note">Note</option><option value="email">Email</option></select></div>
     <div class="form-group" id="callDurationWrap"><label>Duration (minutes)</label><input type="number" id="callDuration" placeholder="5" min="1"></div>
     <div class="form-group"><label>Outcome</label><select class="filter-sel" id="callOutcome" style="width:100%"><option value="interested">Interested</option><option value="not_interested">Not Interested</option><option value="callback">Requested Callback</option><option value="deposit_promised">Deposit Promised</option><option value="no_answer">No Answer</option><option value="other">Other</option></select></div>
     <div class="form-group"><label>Notes</label><textarea id="callNotes" style="width:100%;min-height:80px;padding:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;resize:vertical" placeholder="Enter call notes…"></textarea></div>
@@ -389,6 +389,10 @@ function executeLogCall(){
   logAudit('note',type+' logged for client '+clientId,clientId);closeModal('logCall');toast(type+' logged','success');renderCalls();
 }
 function reassignClient(uid){const agents=getStaff().filter(s=>s.role==='agent'&&s.status==='active');const sel=prompt('Reassign to agent (enter agent ID):\n'+agents.map(a=>a.id+': '+a.firstName+' '+a.lastName).join('\n'));if(!sel)return;const users=getUsers();const idx=users.findIndex(u=>u.id===uid);if(idx<0)return;users[idx].assignedAgentId=sel;ls('mbc_users',users);logAudit('assign','Client reassigned to '+sel,uid);broadcastCRMAction('client_reassigned',{userId:uid,agentId:sel});toast('Client reassigned','success');closeDrawer();renderClients();}
+
+// ─── REALTIME SYNC ───
+const crmBC=new BroadcastChannel('mbc-crm-sync');
+crmBC.onmessage=function(e){if(e.data&&e.data.action){const active=document.querySelector('.section.active');if(active){const id=active.id.replace('sec-','');const r={dashboard:renderDashboard,clients:renderClients,dormant:renderDormant,reassign:renderReassign,calls:renderCalls};if(r[id])r[id]();}}};
 
 renderDashboard();
 </script>

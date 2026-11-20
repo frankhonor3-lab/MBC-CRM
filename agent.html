@@ -259,7 +259,7 @@ function broadcastCRMAction(action,payload){const bc=new BroadcastChannel('mbc-c
 function toast(msg,type='info'){const wrap=document.getElementById('toastWrap');const el=document.createElement('div');el.className='crm-toast'+(type==='success'?' crm-toast-success':type==='error'?' crm-toast-error':'');el.textContent=msg;wrap.appendChild(el);setTimeout(()=>el.classList.add('show'),10);setTimeout(()=>{el.classList.remove('show');setTimeout(()=>el.remove(),400);},3500);}
 function openModal(id){document.getElementById('modal-'+id).style.display='flex';if(id==='addTask')populateTaskClientSel();}
 function closeModal(id){document.getElementById('modal-'+id).style.display='none';}
-function showSection(id,el){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.getElementById('sec-'+id).classList.add('active');document.querySelectorAll('.crm-nav-item').forEach(i=>i.classList.remove('active'));if(el)el.classList.add('active');document.getElementById('topbarTitle').textContent=el?el.textContent.trim():id;const renders={dashboard:renderDashboard,clients:renderClients,leads:renderLeads,tasks:renderTasks};if(renders[id])renders[id]();}
+function showSection(id,el){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.getElementById('sec-'+id).classList.add('active');document.querySelectorAll('.crm-nav-item').forEach(i=>i.classList.remove('active'));if(el)el.classList.add('active');if(el){const c=el.cloneNode(true);c.querySelectorAll('span,i').forEach(s=>s.remove());document.getElementById('topbarTitle').textContent=c.textContent.trim();}else{document.getElementById('topbarTitle').textContent=id;}const renders={dashboard:renderDashboard,clients:renderClients,leads:renderLeads,tasks:renderTasks};if(renders[id])renders[id]();}
 function doLogout(){localStorage.removeItem('mbc_crm_session');window.location.href='index.html';}
 
 // DASHBOARD
@@ -442,6 +442,10 @@ function executeLogCall(){
   logAudit('note','Call logged for client '+uid,uid);closeModal('logCall');toast('Call logged','success');if(currentDrawerClient===uid)renderDrawerTab('notes');_callClientId=null;
 }
 function addNoteForClient(uid){const content=prompt('Enter note:');if(!content)return;const notes=getNotes();notes.unshift({id:'note_'+Date.now(),clientId:uid,authorId:currentStaff.id,authorName:currentStaff.firstName+' '+currentStaff.lastName,content,type:'note',createdAt:new Date().toISOString()});ls('mbc_crm_notes',notes);toast('Note saved','success');if(currentDrawerClient===uid)renderDrawerTab('notes');}
+
+// ─── REALTIME SYNC ───
+const crmBC=new BroadcastChannel('mbc-crm-sync');
+crmBC.onmessage=function(e){if(e.data&&e.data.action){const active=document.querySelector('.section.active');if(active){const id=active.id.replace('sec-','');const r={dashboard:renderDashboard,clients:renderClients,leads:renderLeads,tasks:renderTasks};if(r[id])r[id]();}}};
 
 renderDashboard();
 </script>
