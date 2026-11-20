@@ -204,6 +204,19 @@ select.filter-sel{padding:9px 12px;background:rgba(255,255,255,.06);border:1px s
   </div>
 </div>
 
+<!-- ADD NOTE MODAL -->
+<div class="crm-modal-overlay" id="modal-addNote" style="display:none">
+  <div class="crm-modal">
+    <h4>Add Note</h4>
+    <div class="form-group"><label>Client</label><div id="noteClientName" style="padding:9px 0;font-weight:600"></div></div>
+    <div class="form-group"><label>Note</label><textarea id="noteContent" style="width:100%;min-height:100px;padding:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;resize:vertical" placeholder="Enter note…"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('addNote')">Cancel</button>
+      <button class="btn btn-primary" onclick="executeAddNote()">Save Note</button>
+    </div>
+  </div>
+</div>
+
 <!-- LOG CALL MODAL -->
 <div class="crm-modal-overlay" id="modal-logCall" style="display:none">
   <div class="crm-modal">
@@ -313,9 +326,12 @@ function renderClients(){
         <div><div class="client-card-stat-label">Inactive</div><div class="client-card-stat-val" style="color:${d>=30?'var(--dn)':d>=14?'var(--gold)':'var(--up)'}">${d===999?'—':d+'d'}</div></div>
       </div>
       ${tags?`<div style="margin-top:10px">${tags}</div>`:''}
-      <div style="display:flex;gap:6px;margin-top:12px">
-        ${kycBadge(u.kycStatus)}
-        ${(p.positions||[]).length>0?`<span class="badge badge-active" style="font-size:10px">${(p.positions||[]).length} pos open</span>`:''}
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+        <div style="display:flex;gap:6px">
+          ${kycBadge(u.kycStatus)}
+          ${(p.positions||[]).length>0?`<span class="badge badge-active" style="font-size:10px">${(p.positions||[]).length} pos</span>`:''}
+        </div>
+        <button class="table-action" style="font-size:11px;padding:3px 8px" onclick="event.stopPropagation();openCallModal('${u.id}')"><i class="fas fa-phone"></i> Call</button>
       </div>
     </div>`;
   }).join('');
@@ -389,10 +405,18 @@ function renderLeads(){
     <td><div style="font-weight:600">${escHTML(l.firstName||'')} ${escHTML(l.lastName||'')}</div><div style="font-size:11px;color:var(--t2)">${escHTML(l.country||'—')}</div></td>
     <td style="font-size:12px">${escHTML(l.email||'—')}<br><span style="color:var(--t2)">${escHTML(l.phone||'')}</span></td>
     <td><span class="badge badge-active" style="font-size:11px">${escHTML(l.source||'—')}</span></td>
-    <td>${lpBadge(l.status)}</td>
+    <td><select class="filter-sel" style="font-size:11px;padding:3px 6px;min-width:0" onclick="event.stopPropagation()" onchange="updateLeadStage('${l.id}',this.value)">${['new','contacted','qualified','interested','kyc_pending','kyc_approved','ftd','active_trader','dormant','churned'].map(s=>`<option value="${s}" ${l.status===s?'selected':''}>${s.replace(/_/g,' ')}</option>`).join('')}</select></td>
     <td style="font-size:12px">${fmtDate(l.createdAt)}</td>
     <td style="font-size:12px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHTML(l.notes||'—')}</td>
     <td><button class="table-action" onclick="advanceLead('${l.id}')">Advance</button><button class="table-action" onclick="updateLeadNote('${l.id}')">Note</button></td></tr>`).join('')||`<tr><td colspan="7"><div class="empty-state"><i class="fas fa-funnel-dollar"></i>No leads</div></td></tr>`;
+}
+function updateLeadStage(id,newStatus){
+  const leads=getLeads();const idx=leads.findIndex(l=>l.id===id);if(idx<0)return;
+  const old=leads[idx].status;
+  leads[idx].status=newStatus;leads[idx].updatedAt=new Date().toISOString();
+  ls('mbc_crm_leads',leads);
+  logAudit('assign','Lead stage changed: '+old+' → '+newStatus,null);
+  toast('Stage updated: '+newStatus.replace(/_/g,' '),'success');
 }
 function advanceLead(id){const p=['new','contacted','qualified','interested','kyc_pending','kyc_approved','ftd','active_trader','dormant','churned'];const leads=getLeads();const idx=leads.findIndex(l=>l.id===id);if(idx<0)return;const ci=p.indexOf(leads[idx].status);if(ci<0||ci>=p.length-1){toast('Already at final stage');return;}leads[idx].status=p[ci+1];leads[idx].updatedAt=new Date().toISOString();ls('mbc_crm_leads',leads);renderLeads();toast('Lead advanced to '+leads[idx].status,'success');}
 function updateLeadNote(id){const note=prompt('Enter note for this lead:');if(!note)return;const leads=getLeads();const idx=leads.findIndex(l=>l.id===id);if(idx<0)return;leads[idx].notes=note;leads[idx].updatedAt=new Date().toISOString();ls('mbc_crm_leads',leads);renderLeads();toast('Note saved');}
@@ -441,7 +465,27 @@ function executeLogCall(){
   const users=getUsers();const idx=users.findIndex(u=>u.id===uid);if(idx>=0){users[idx].lastActivity=new Date().toISOString();ls('mbc_users',users);}
   logAudit('note','Call logged for client '+uid,uid);closeModal('logCall');toast('Call logged','success');if(currentDrawerClient===uid)renderDrawerTab('notes');_callClientId=null;
 }
-function addNoteForClient(uid){const content=prompt('Enter note:');if(!content)return;const notes=getNotes();notes.unshift({id:'note_'+Date.now(),clientId:uid,authorId:currentStaff.id,authorName:currentStaff.firstName+' '+currentStaff.lastName,content,type:'note',createdAt:new Date().toISOString()});ls('mbc_crm_notes',notes);toast('Note saved','success');if(currentDrawerClient===uid)renderDrawerTab('notes');}
+var _noteClientId=null;
+function addNoteForClient(uid){
+  _noteClientId=uid;
+  const u=getUsers().find(x=>x.id===uid)||{};
+  document.getElementById('noteClientName').textContent=(u.firstName||'')+' '+(u.lastName||'');
+  document.getElementById('noteContent').value='';
+  openModal('addNote');
+}
+function executeAddNote(){
+  const uid=_noteClientId;if(!uid)return;
+  const content=document.getElementById('noteContent').value.trim();
+  if(!content){toast('Enter note content','error');return;}
+  const notes=getNotes();
+  notes.unshift({id:'note_'+Date.now(),clientId:uid,authorId:currentStaff.id,authorName:currentStaff.firstName+' '+currentStaff.lastName,content,type:'note',createdAt:new Date().toISOString()});
+  ls('mbc_crm_notes',notes);
+  logAudit('note','Note added for client '+uid,uid);
+  toast('Note saved','success');
+  closeModal('addNote');
+  if(currentDrawerClient===uid)renderDrawerTab('notes');
+  _noteClientId=null;
+}
 
 // ─── REALTIME SYNC ───
 const crmBC=new BroadcastChannel('mbc-crm-sync');

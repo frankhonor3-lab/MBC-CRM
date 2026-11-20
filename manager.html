@@ -264,6 +264,38 @@ select.filter-sel{padding:9px 12px;background:rgba(255,255,255,.06);border:1px s
   </div>
 </div>
 
+<!-- ASSIGN LEAD MODAL -->
+<div class="crm-modal-overlay" id="modal-assignLeadMgr" style="display:none">
+  <div class="crm-modal">
+    <h4>Assign Lead to Agent</h4>
+    <div class="form-group"><label>Agent</label>
+      <select class="filter-sel" id="mgr_assignLeadAgentSel" style="width:100%">
+        <option value="">— Unassigned —</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('assignLeadMgr')">Cancel</button>
+      <button class="btn btn-primary" onclick="executeAssignLeadMgr()">Assign</button>
+    </div>
+  </div>
+</div>
+
+<!-- REASSIGN CLIENT MODAL -->
+<div class="crm-modal-overlay" id="modal-reassignClient" style="display:none">
+  <div class="crm-modal">
+    <h4>Reassign Client</h4>
+    <div class="form-group"><label>Reassign to Agent</label>
+      <select class="filter-sel" id="mgr_reassignAgentSel" style="width:100%">
+        <option value="">— Select agent —</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('reassignClient')">Cancel</button>
+      <button class="btn btn-primary" onclick="executeReassignClient()">Reassign</button>
+    </div>
+  </div>
+</div>
+
 <div class="crm-toast-wrap" id="toastWrap"></div>
 <script>
 var currentStaff=null;
@@ -435,7 +467,27 @@ function renderLeads(){
     <td><button class="table-action" onclick="advanceLead('${l.id}')">Advance</button><button class="table-action" onclick="assignLeadToAgent('${l.id}')">Assign</button></td></tr>`).join('')||`<tr><td colspan="7"><div class="empty-state"><i class="fas fa-funnel-dollar"></i>No leads</div></td></tr>`;
 }
 function advanceLead(id){const p=['new','contacted','qualified','interested','kyc_pending','kyc_approved','ftd','active_trader','dormant','churned'];const leads=getLeads();const idx=leads.findIndex(l=>l.id===id);if(idx<0)return;const ci=p.indexOf(leads[idx].status);if(ci<0||ci>=p.length-1)return;leads[idx].status=p[ci+1];leads[idx].updatedAt=new Date().toISOString();ls('mbc_crm_leads',leads);renderLeads();toast('Lead advanced','success');}
-function assignLeadToAgent(id){const agents=getMyAgents();const sel=prompt('Assign to agent:\n'+agents.map(a=>a.id+': '+a.firstName+' '+a.lastName).join('\n'));if(!sel)return;const leads=getLeads();const idx=leads.findIndex(l=>l.id===id);if(idx<0)return;leads[idx].assignedAgentId=sel;ls('mbc_crm_leads',leads);renderLeads();toast('Lead assigned');}
+var _mgrAssignLeadId=null;
+function assignLeadToAgent(id){
+  _mgrAssignLeadId=id;
+  const sel=document.getElementById('mgr_assignLeadAgentSel');
+  sel.innerHTML='<option value="">— Unassigned —</option>';
+  getMyAgents().forEach(a=>{const o=document.createElement('option');o.value=a.id;o.textContent=a.firstName+' '+a.lastName;sel.appendChild(o);});
+  const lead=getLeads().find(l=>l.id===id);
+  if(lead&&lead.assignedAgentId)sel.value=lead.assignedAgentId;
+  openModal('assignLeadMgr');
+}
+function executeAssignLeadMgr(){
+  if(!_mgrAssignLeadId){closeModal('assignLeadMgr');return;}
+  const agentId=document.getElementById('mgr_assignLeadAgentSel').value;
+  if(!agentId){toast('Select an agent','error');return;}
+  const leads=getLeads();const idx=leads.findIndex(l=>l.id===_mgrAssignLeadId);
+  if(idx<0){closeModal('assignLeadMgr');return;}
+  leads[idx].assignedAgentId=agentId;leads[idx].updatedAt=new Date().toISOString();
+  ls('mbc_crm_leads',leads);
+  logAudit('assign','Lead assigned to agent '+agentId,null);
+  closeModal('assignLeadMgr');toast('Lead assigned','success');renderLeads();_mgrAssignLeadId=null;
+}
 function createLead(){const first=document.getElementById('ld_first').value.trim();const email=document.getElementById('ld_email').value.trim();if(!first||!email){toast('First name and email required','error');return;}const leads=getLeads();leads.push({id:'lead_'+Date.now(),firstName:first,lastName:document.getElementById('ld_last').value.trim(),email,phone:document.getElementById('ld_phone').value.trim(),country:document.getElementById('ld_country').value.trim(),source:document.getElementById('ld_source').value,campaign:'',status:'new',assignedAgentId:document.getElementById('ld_agent').value||null,assignedManagerId:currentStaff.id,notes:document.getElementById('ld_notes').value.trim(),createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),convertedUserId:null});ls('mbc_crm_leads',leads);closeModal('addLead');toast('Lead created','success');renderLeads();}
 
 // DEPOSITS
@@ -497,7 +549,29 @@ function executeBalanceAdj(){
 }
 
 // REASSIGN
-function reassignClient(uid){const agents=getMyAgents();const sel=prompt('Reassign to agent (enter agent ID):\n'+agents.map(a=>a.id+': '+a.firstName+' '+a.lastName).join('\n'));if(!sel)return;const users=getUsers();const idx=users.findIndex(u=>u.id===uid);if(idx<0)return;users[idx].assignedAgentId=sel;ls('mbc_users',users);logAudit('assign','Client reassigned to '+sel,uid);broadcastCRMAction('client_reassigned',{userId:uid,agentId:sel});toast('Client reassigned','success');renderClients();}
+var _mgrReassignClientId=null;
+function reassignClient(uid){
+  _mgrReassignClientId=uid;
+  const sel=document.getElementById('mgr_reassignAgentSel');
+  sel.innerHTML='<option value="">— Select agent —</option>';
+  getMyAgents().forEach(a=>{const o=document.createElement('option');o.value=a.id;o.textContent=a.firstName+' '+a.lastName;sel.appendChild(o);});
+  const users=getUsers();const u=users.find(x=>x.id===uid)||{};
+  if(u.assignedAgentId)sel.value=u.assignedAgentId;
+  openModal('reassignClient');
+}
+function executeReassignClient(){
+  if(!_mgrReassignClientId){closeModal('reassignClient');return;}
+  const agentId=document.getElementById('mgr_reassignAgentSel').value;
+  if(!agentId){toast('Select an agent','error');return;}
+  const users=getUsers();const idx=users.findIndex(u=>u.id===_mgrReassignClientId);
+  if(idx<0){closeModal('reassignClient');return;}
+  users[idx].assignedAgentId=agentId;ls('mbc_users',users);
+  logAudit('assign','Client reassigned to '+agentId,_mgrReassignClientId);
+  broadcastCRMAction('client_reassigned',{userId:_mgrReassignClientId,agentId});
+  closeModal('reassignClient');toast('Client reassigned','success');
+  if(currentDrawerClient===_mgrReassignClientId)renderDrawerTab('overview');
+  renderClients();_mgrReassignClientId=null;
+}
 
 // ─── REALTIME SYNC ───
 const crmBC=new BroadcastChannel('mbc-crm-sync');

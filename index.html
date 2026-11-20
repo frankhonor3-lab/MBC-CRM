@@ -201,6 +201,18 @@ document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); })
 
 // ─── SEED DEFAULT DATA ───
 function seedData() {
+  // ── Migrate existing demo_client_001 → real trading-platform user ID ──────
+  (function(){
+    var u=JSON.parse(localStorage.getItem('mbc_users')||'[]');
+    var d=u.find(function(x){return x.email==='alex.morgan@demo.com';});
+    if(!d||d.id==='demo_client_001')return;
+    var id=d.id;
+    function m(k,f){var a=JSON.parse(localStorage.getItem(k)||'[]');var c=false;a.forEach(function(x,i){if(x[f]==='demo_client_001'){a[i][f]=id;c=true;}});if(c)localStorage.setItem(k,JSON.stringify(a));}
+    m('mbc_crm_notes','clientId');m('mbc_crm_calls','clientId');m('mbc_crm_tasks','clientId');
+    m('mbc_deposit_requests','userId');m('mbc_withdrawal_requests','userId');m('mbc_crm_audit_log','clientId');
+    var op=localStorage.getItem('mbc_portfolio_demo_client_001');
+    if(op&&!localStorage.getItem('mbc_portfolio_'+id))localStorage.setItem('mbc_portfolio_'+id,op);
+  })();
   const existing = JSON.parse(localStorage.getItem('mbc_crm_staff') || '[]');
   if (existing.length > 0) return;
 
@@ -312,20 +324,24 @@ function seedData() {
     localStorage.setItem('mbc_users', JSON.stringify(users));
   }
 
+  // Use actual first user's ID for all seed references
+  const allUsers = JSON.parse(localStorage.getItem('mbc_users') || '[]');
+  const seedClientId = allUsers.length > 0 ? allUsers[0].id : 'demo_client_001';
+
   // Seed sample notes and calls
   const notes = [
-    { id:'note_1', clientId:'demo_client_001', authorId:'stf_agent1', authorName:'Sarah Connor', content:'Client called asking about withdrawals. Explained the KYC process and timeframes.', type:'call', createdAt:new Date(Date.now()-2*86400000).toISOString() },
-    { id:'note_2', clientId:'demo_client_001', authorId:'stf_agent1', authorName:'Sarah Connor', content:'Sent educational material on options trading as requested.', type:'email', createdAt:new Date(Date.now()-86400000).toISOString() }
+    { id:'note_1', clientId:seedClientId, authorId:'stf_agent1', authorName:'Sarah Connor', content:'Client called asking about withdrawals. Explained the KYC process and timeframes.', type:'call', createdAt:new Date(Date.now()-2*86400000).toISOString() },
+    { id:'note_2', clientId:seedClientId, authorId:'stf_agent1', authorName:'Sarah Connor', content:'Sent educational material on options trading as requested.', type:'email', createdAt:new Date(Date.now()-86400000).toISOString() }
   ];
   localStorage.setItem('mbc_crm_notes', JSON.stringify(notes));
 
   const calls = [
-    { id:'call_1', clientId:'demo_client_001', agentId:'stf_agent1', agentName:'Sarah Connor', duration:420, outcome:'interested', notes:'Client very interested in increasing position size. Suggested depositing more funds.', calledAt:new Date(Date.now()-2*86400000).toISOString() }
+    { id:'call_1', clientId:seedClientId, agentId:'stf_agent1', agentName:'Sarah Connor', duration:7, outcome:'interested', notes:'Client very interested in increasing position size. Suggested depositing more funds.', calledAt:new Date(Date.now()-2*86400000).toISOString() }
   ];
   localStorage.setItem('mbc_crm_calls', JSON.stringify(calls));
 
   const tasks = [
-    { id:'task_1', assignedTo:'stf_agent1', clientId:'demo_client_001', title:'Follow up on deposit request', description:'Client mentioned they will deposit $5000 this week. Follow up.', priority:'high', status:'pending', dueAt:new Date(Date.now()+86400000).toISOString(), createdAt:now, completedAt:null },
+    { id:'task_1', assignedTo:'stf_agent1', clientId:seedClientId, title:'Follow up on deposit request', description:'Client mentioned they will deposit $5000 this week. Follow up.', priority:'high', status:'pending', dueAt:new Date(Date.now()+86400000).toISOString(), createdAt:now, completedAt:null },
     { id:'task_2', assignedTo:'stf_agent1', clientId:null, title:'Review new leads from Google Ads', description:'Check 3 new leads from campaign and assign priority.', priority:'medium', status:'pending', dueAt:new Date().toISOString(), createdAt:now, completedAt:null }
   ];
   localStorage.setItem('mbc_crm_tasks', JSON.stringify(tasks));
@@ -335,7 +351,7 @@ function seedData() {
   if (existingDeps.length === 0) {
     localStorage.setItem('mbc_deposit_requests', JSON.stringify([{
       id: 'dep_demo_001',
-      userId: 'demo_client_001',
+      userId: seedClientId,
       amount: 5000,
       method: 'Wire Transfer',
       status: 'pending',
@@ -345,8 +361,32 @@ function seedData() {
     }]));
   }
 
-  // Init audit log and notifications
-  if (!localStorage.getItem('mbc_crm_audit_log')) localStorage.setItem('mbc_crm_audit_log', JSON.stringify([]));
+  if (!localStorage.getItem('mbc_crm_notifications')) localStorage.setItem('mbc_crm_notifications', JSON.stringify([]));
+}
+
+// Always seed missing optional keys (runs even when staff already exists)
+function seedOptionalData() {
+  const allUsers = JSON.parse(localStorage.getItem('mbc_users') || '[]');
+  const seedClientId = allUsers.length > 0 ? allUsers[0].id : 'demo_client_001';
+  if (!localStorage.getItem('mbc_withdrawal_requests')) {
+    localStorage.setItem('mbc_withdrawal_requests', JSON.stringify([{
+      id: 'wd_demo_001',
+      userId: seedClientId,
+      amount: 2500,
+      method: 'Wire Transfer',
+      status: 'pending',
+      requestDate: new Date(Date.now() - 3600000).toISOString(),
+      createdAt: new Date(Date.now() - 3600000).toISOString(),
+      notes: 'Client requested partial withdrawal'
+    }]));
+  }
+  if (!localStorage.getItem('mbc_crm_audit_log') || JSON.parse(localStorage.getItem('mbc_crm_audit_log')||'[]').length === 0) {
+    localStorage.setItem('mbc_crm_audit_log', JSON.stringify([
+      { id:'aud_seed_1', action:'deposit', details:'Deposit approved: $50,000.00 for Alex Morgan', clientId:seedClientId, actor:'admin', actorName:'Admin', ts:new Date(Date.now()-25*86400000).toISOString() },
+      { id:'aud_seed_2', action:'kyc', details:'KYC updated to approved — Documents verified', clientId:seedClientId, actor:'admin', actorName:'Admin', ts:new Date(Date.now()-24*86400000).toISOString() },
+      { id:'aud_seed_3', action:'assign', details:'New agent created: Sarah Connor (sarah.c)', clientId:null, actor:'admin', actorName:'Admin', ts:new Date(Date.now()-30*86400000).toISOString() }
+    ]));
+  }
   if (!localStorage.getItem('mbc_crm_notifications')) localStorage.setItem('mbc_crm_notifications', JSON.stringify([]));
 }
 
@@ -377,6 +417,7 @@ function updateHeroStats() {
     }
   } catch(e) {}
   seedData();
+  seedOptionalData();
   updateHeroStats();
 })();
 </script>

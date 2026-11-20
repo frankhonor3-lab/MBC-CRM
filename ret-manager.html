@@ -207,6 +207,22 @@ select.filter-sel{padding:9px 12px;background:rgba(255,255,255,.06);border:1px s
   </div>
 </div>
 
+<!-- REASSIGN CLIENT MODAL -->
+<div class="crm-modal-overlay" id="modal-reassignRet" style="display:none">
+  <div class="crm-modal">
+    <h4>Reassign Client</h4>
+    <div class="form-group"><label>Reassign to Agent</label>
+      <select class="filter-sel" id="ret_reassignAgentSel" style="width:100%">
+        <option value="">— Select agent —</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('reassignRet')">Cancel</button>
+      <button class="btn btn-primary" onclick="executeReassignRet()">Reassign</button>
+    </div>
+  </div>
+</div>
+
 <div class="crm-toast-wrap" id="toastWrap"></div>
 <script>
 var currentStaff=null;
@@ -388,7 +404,29 @@ function executeLogCall(){
   const users=getUsers();const idx=users.findIndex(u=>u.id===clientId);if(idx>=0){users[idx].lastActivity=new Date().toISOString();ls('mbc_users',users);}
   logAudit('note',type+' logged for client '+clientId,clientId);closeModal('logCall');toast(type+' logged','success');renderCalls();
 }
-function reassignClient(uid){const agents=getStaff().filter(s=>s.role==='agent'&&s.status==='active');const sel=prompt('Reassign to agent (enter agent ID):\n'+agents.map(a=>a.id+': '+a.firstName+' '+a.lastName).join('\n'));if(!sel)return;const users=getUsers();const idx=users.findIndex(u=>u.id===uid);if(idx<0)return;users[idx].assignedAgentId=sel;ls('mbc_users',users);logAudit('assign','Client reassigned to '+sel,uid);broadcastCRMAction('client_reassigned',{userId:uid,agentId:sel});toast('Client reassigned','success');closeDrawer();renderClients();}
+var _retReassignClientId=null;
+function reassignClient(uid){
+  _retReassignClientId=uid;
+  const sel=document.getElementById('ret_reassignAgentSel');
+  sel.innerHTML='<option value="">— Select agent —</option>';
+  getStaff().filter(s=>s.role==='agent'&&s.status==='active').forEach(a=>{const o=document.createElement('option');o.value=a.id;o.textContent=a.firstName+' '+a.lastName;sel.appendChild(o);});
+  const users=getUsers();const u=users.find(x=>x.id===uid)||{};
+  if(u.assignedAgentId)sel.value=u.assignedAgentId;
+  openModal('reassignRet');
+}
+function executeReassignRet(){
+  if(!_retReassignClientId){closeModal('reassignRet');return;}
+  const agentId=document.getElementById('ret_reassignAgentSel').value;
+  if(!agentId){toast('Select an agent','error');return;}
+  const users=getUsers();const idx=users.findIndex(u=>u.id===_retReassignClientId);
+  if(idx<0){closeModal('reassignRet');return;}
+  users[idx].assignedAgentId=agentId;ls('mbc_users',users);
+  logAudit('assign','Client reassigned to '+agentId,_retReassignClientId);
+  broadcastCRMAction('client_reassigned',{userId:_retReassignClientId,agentId});
+  closeModal('reassignRet');toast('Client reassigned','success');
+  if(currentDrawerClient===_retReassignClientId){closeDrawer();}
+  renderClients();_retReassignClientId=null;
+}
 
 // ─── REALTIME SYNC ───
 const crmBC=new BroadcastChannel('mbc-crm-sync');
