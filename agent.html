@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Panel — MBCtrading CRM</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.section{display:none}.section.active{display:block}
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.action-bar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.search-inp{flex:1;min-width:200px;padding:9px 14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--text);font-size:13px;font-family:var(--font)}
+.search-inp:focus{outline:none;border-color:var(--red)}
+select.filter-sel{padding:9px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--text);font-size:13px;font-family:var(--font);cursor:pointer}
+.table-action{background:none;border:none;color:var(--blue);font-size:12px;cursor:pointer;padding:3px 6px;border-radius:4px;font-family:var(--font)}
+.table-action:hover{background:rgba(79,168,255,.1)}.table-action.red{color:var(--dn)}.table-action.red:hover{background:rgba(239,83,80,.1)}.table-action.green{color:var(--up)}.table-action.green:hover{background:rgba(38,201,163,.1)}
+.kyc-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:10px;font-size:11px;font-weight:700}
+.kyc-approved{background:rgba(38,201,163,.12);color:var(--up)}.kyc-pending{background:rgba(245,184,67,.12);color:var(--gold)}.kyc-not-started{background:rgba(255,255,255,.07);color:var(--t2)}.kyc-restricted{background:rgba(239,83,80,.12);color:var(--dn)}
+.lp-stage{display:inline-block;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.lp-new{background:rgba(79,168,255,.12);color:var(--blue)}.lp-qualified{background:rgba(167,139,250,.12);color:#a78bfa}.lp-contacted{background:rgba(79,168,255,.15);color:var(--blue)}.lp-interested{background:rgba(38,201,163,.12);color:var(--up)}.lp-ftd{background:rgba(38,201,163,.2);color:var(--up)}.lp-active_trader{background:rgba(38,201,163,.25);color:var(--up)}.lp-dormant{background:rgba(255,255,255,.07);color:var(--t2)}.lp-churned{background:rgba(239,83,80,.1);color:var(--dn)}
+.crm-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
+.crm-modal{background:var(--surface);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:28px;width:100%;max-width:520px}
+.crm-modal h4{font-size:16px;font-weight:700;margin-bottom:16px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+.empty-state{text-align:center;padding:60px 20px;color:var(--t2)}
+.empty-state i{font-size:40px;margin-bottom:12px;display:block;opacity:.3}
+.timeline-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.timeline-dot{width:8px;height:8px;border-radius:50%;background:var(--red);margin-top:5px;flex-shrink:0}
+.timeline-dot.green{background:var(--up)}.timeline-dot.blue{background:var(--blue)}.timeline-dot.gold{background:var(--gold)}
+.crm-drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200}
+.crm-drawer-tabs{display:flex;border-bottom:1px solid rgba(255,255,255,.08);margin-bottom:16px}
+.crm-drawer-tab{padding:10px 14px;font-size:12px;color:var(--t2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.crm-drawer-tab.active{color:var(--text);border-bottom-color:var(--red)}
+.tag-pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;margin:2px}
+.tag-vip{background:rgba(245,184,67,.15);color:var(--gold)}.tag-at-risk{background:rgba(239,83,80,.15);color:var(--dn)}.tag-dormant{background:rgba(255,255,255,.08);color:var(--t2)}.tag-kyc{background:rgba(79,168,255,.15);color:var(--blue)}.tag-ftd{background:rgba(38,201,163,.15);color:var(--up)}.tag-ib{background:rgba(167,139,250,.15);color:#a78bfa}.tag-dnd{background:rgba(239,83,80,.08);color:var(--dn)}
+.task-priority-high{border-left:3px solid var(--dn)}.task-priority-medium{border-left:3px solid var(--gold)}.task-priority-low{border-left:3px solid var(--up)}
+.pnl-positive{color:var(--up);font-weight:700}.pnl-negative{color:var(--dn);font-weight:700}
+.client-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:16px;cursor:pointer;transition:border-color .2s}
+.client-card:hover{border-color:rgba(217,18,34,.4)}
+.client-card-name{font-size:15px;font-weight:700;margin-bottom:4px}
+.client-card-email{font-size:12px;color:var(--t2);margin-bottom:12px}
+.client-card-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.client-card-stat-label{font-size:10px;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+.client-card-stat-val{font-size:13px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="crm-layout">
+  <aside class="crm-sidebar">
+    <div class="crm-sidebar-logo">MBC<span>trading</span> <span class="crm-sidebar-logo-tag">CRM</span></div>
+    <nav class="crm-sidebar-nav">
+      <div class="crm-nav-section">OVERVIEW</div>
+      <a class="crm-nav-item active" onclick="showSection('dashboard',this)"><i class="fas fa-chart-pie"></i> Dashboard</a>
+      <div class="crm-nav-section">MY WORK</div>
+      <a class="crm-nav-item" onclick="showSection('clients',this)"><i class="fas fa-users"></i> My Clients</a>
+      <a class="crm-nav-item" onclick="showSection('leads',this)"><i class="fas fa-funnel-dollar"></i> My Leads</a>
+      <a class="crm-nav-item" onclick="showSection('tasks',this)"><i class="fas fa-tasks"></i> Tasks <span class="crm-badge" id="taskBadge" style="display:none">0</span></a>
+    </nav>
+    <div class="crm-sidebar-footer">
+      <div class="crm-sidebar-user">
+        <div class="crm-avatar" id="sidebarAvatar" style="background:linear-gradient(135deg,#26C9A3,#4FA8FF)">A</div>
+        <div class="crm-sidebar-user-info"><div class="crm-sidebar-user-name" id="sidebarName">Agent</div><div class="crm-sidebar-user-role">Sales Agent</div></div>
+      </div>
+      <button class="crm-sidebar-logout" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i></button>
+    </div>
+  </aside>
+
+  <div class="crm-main-wrap">
+    <header class="crm-topbar">
+      <div class="crm-topbar-title" id="topbarTitle">Dashboard</div>
+      <div class="crm-topbar-actions">
+        <div id="topbarDate" style="font-size:12px;color:var(--t2)"></div>
+        <button class="btn btn-primary" onclick="openModal('addTask')"><i class="fas fa-plus"></i> Add Task</button>
+      </div>
+    </header>
+
+    <main class="crm-main">
+
+      <!-- DASHBOARD -->
+      <div class="section active" id="sec-dashboard">
+        <div class="stat-row" id="dashStats"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+          <div class="crm-card">
+            <div class="crm-card-header"><span>Today's Tasks</span><a class="text-link" onclick="showSection('tasks',document.querySelector('[onclick*=tasks]'))">All Tasks</a></div>
+            <div id="dashTasks"></div>
+          </div>
+          <div class="crm-card">
+            <div class="crm-card-header"><span>Pending Deposits</span></div>
+            <div id="dashDeps"></div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+          <div class="crm-card">
+            <div class="crm-card-header"><span>Recent Lead Updates</span></div>
+            <div id="dashLeads"></div>
+          </div>
+          <div class="crm-card">
+            <div class="crm-card-header"><span>Client Alerts</span></div>
+            <div id="dashAlerts"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MY CLIENTS (card grid + detail drawer) -->
+      <div class="section" id="sec-clients">
+        <div class="action-bar">
+          <input type="text" class="search-inp" id="clientSearch" placeholder="Search my clients…" oninput="renderClients()">
+          <select class="filter-sel" id="clientStatusFilter" onchange="renderClients()">
+            <option value="">All</option>
+            <option value="active">Active</option>
+            <option value="dormant">Dormant</option>
+            <option value="blocked">Blocked</option>
+          </select>
+          <select class="filter-sel" id="clientSortFilter" onchange="renderClients()">
+            <option value="name">Sort: Name</option>
+            <option value="balance">Sort: Balance</option>
+            <option value="activity">Sort: Last Activity</option>
+          </select>
+        </div>
+        <div id="clientGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px"></div>
+      </div>
+
+      <!-- MY LEADS -->
+      <div class="section" id="sec-leads">
+        <div class="action-bar">
+          <input type="text" class="search-inp" id="leadSearch" placeholder="Search leads…" oninput="renderLeads()">
+          <select class="filter-sel" id="leadStatusFilter" onchange="renderLeads()">
+            <option value="">All Stages</option>
+            <option value="new">New</option>
+            <option value="contacted">Contacted</option>
+            <option value="qualified">Qualified</option>
+            <option value="interested">Interested</option>
+            <option value="kyc_pending">KYC Pending</option>
+          </select>
+        </div>
+        <div class="crm-card" style="padding:0">
+          <table class="crm-table">
+            <thead><tr><th>Lead</th><th>Contact</th><th>Source</th><th>Stage</th><th>Created</th><th>Notes</th><th>Actions</th></tr></thead>
+            <tbody id="leadsTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TASKS -->
+      <div class="section" id="sec-tasks">
+        <div class="action-bar">
+          <input type="text" class="search-inp" id="taskSearch" placeholder="Search tasks…" oninput="renderTasks()">
+          <select class="filter-sel" id="taskPriorityFilter" onchange="renderTasks()">
+            <option value="">All Priorities</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+          <select class="filter-sel" id="taskStatusFilter" onchange="renderTasks()">
+            <option value="">All</option>
+            <option value="pending">Pending</option>
+            <option value="done">Done</option>
+          </select>
+          <button class="btn btn-primary" onclick="openModal('addTask')"><i class="fas fa-plus"></i> Add Task</button>
+        </div>
+        <div id="tasksContainer"></div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- CLIENT DRAWER -->
+<div class="crm-drawer-overlay" id="drawerOverlay" onclick="closeDrawer()" style="display:none"></div>
+<div class="crm-drawer" id="clientDrawer" style="display:none;width:560px">
+  <div class="crm-drawer-header">
+    <div>
+      <div class="crm-drawer-title" id="drawerName">—</div>
+      <div class="crm-drawer-sub" id="drawerSub">—</div>
+    </div>
+    <button class="crm-drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="crm-drawer-tabs">
+    <div class="crm-drawer-tab active" onclick="switchDrawerTab('overview',this)">Overview</div>
+    <div class="crm-drawer-tab" onclick="switchDrawerTab('portfolio',this)">Portfolio</div>
+    <div class="crm-drawer-tab" onclick="switchDrawerTab('deposits',this)">Deposits</div>
+    <div class="crm-drawer-tab" onclick="switchDrawerTab('notes',this)">Notes & Calls</div>
+    <div class="crm-drawer-tab" onclick="switchDrawerTab('tasks',this)">Tasks</div>
+  </div>
+  <div class="crm-drawer-body" id="drawerBody"></div>
+</div>
+
+<!-- ADD TASK MODAL -->
+<div class="crm-modal-overlay" id="modal-addTask" style="display:none">
+  <div class="crm-modal">
+    <h4>Add Task</h4>
+    <div class="form-group"><label>Title</label><input type="text" id="tk_title" placeholder="Follow up with client…"></div>
+    <div class="form-group"><label>Description</label><textarea id="tk_desc" style="width:100%;min-height:60px;padding:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;resize:vertical" placeholder="Details…"></textarea></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group"><label>Priority</label><select class="filter-sel" id="tk_priority" style="width:100%"><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></div>
+      <div class="form-group"><label>Due Date</label><input type="date" id="tk_due" style="width:100%;padding:9px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--text);font-family:var(--font)"></div>
+    </div>
+    <div class="form-group"><label>Linked Client (optional)</label><select class="filter-sel" id="tk_client" style="width:100%"><option value="">None</option></select></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('addTask')">Cancel</button>
+      <button class="btn btn-primary" onclick="createTask()">Add Task</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOG CALL MODAL -->
+<div class="crm-modal-overlay" id="modal-logCall" style="display:none">
+  <div class="crm-modal">
+    <h4>Log Call</h4>
+    <div class="form-group"><label>Client</label><div id="callClientName" style="padding:9px 0;font-weight:600"></div></div>
+    <div class="form-group"><label>Duration (minutes)</label><input type="number" id="callDuration" placeholder="10" min="1"></div>
+    <div class="form-group"><label>Outcome</label><select class="filter-sel" id="callOutcome" style="width:100%"><option value="interested">Interested</option><option value="deposit_promised">Deposit Promised</option><option value="callback">Requested Callback</option><option value="not_interested">Not Interested</option><option value="no_answer">No Answer</option><option value="other">Other</option></select></div>
+    <div class="form-group"><label>Notes</label><textarea id="callNotes" style="width:100%;min-height:80px;padding:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;resize:vertical" placeholder="Enter call notes…"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('logCall')">Cancel</button>
+      <button class="btn btn-primary" onclick="executeLogCall()">Save Call</button>
+    </div>
+  </div>
+</div>
+
+<div class="crm-toast-wrap" id="toastWrap"></div>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script>
+var currentStaff=null;
+(function(){
+  var sess=null;try{sess=JSON.parse(localStorage.getItem('mbc_crm_session')||'null');}catch(e){}
+  if(!sess||sess.role!=='agent'||(Date.now()-sess.time>8*3600*1000)){window.location.href='index.html';return;}
+  var staff=JSON.parse(localStorage.getItem('mbc_crm_staff')||'[]');
+  currentStaff=staff.find(s=>s.id===sess.id)||null;
+  if(!currentStaff){window.location.href='index.html';return;}
+  document.getElementById('sidebarName').textContent=currentStaff.firstName+' '+currentStaff.lastName;
+  document.getElementById('sidebarAvatar').textContent=currentStaff.firstName[0];
+  document.getElementById('topbarDate').textContent=new Date().toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+})();
+
+function ls(k,v){if(v!==undefined){localStorage.setItem(k,JSON.stringify(v));return v;}try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
+function getUsers(){return ls('mbc_users')||[];}
+function getLeads(){return ls('mbc_crm_leads')||[];}
+function getTasks(){return ls('mbc_crm_tasks')||[];}
+function getDeposits(){return ls('mbc_deposit_requests')||[];}
+function getPortfolio(uid){return ls('mbc_portfolio_'+uid);}
+function getNotes(){return ls('mbc_crm_notes')||[];}
+function getCalls(){return ls('mbc_crm_calls')||[];}
+function getMyClients(){return getUsers().filter(u=>u.assignedAgentId===currentStaff.id);}
+function getMyLeads(){return getLeads().filter(l=>l.assignedAgentId===currentStaff.id);}
+function getMyTasks(){return getTasks().filter(t=>t.assignedTo===currentStaff.id);}
+function fmtMoney(n){if(!n)return '$0';return '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtDate(d){if(!d)return '—';return new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});}
+function fmtTime(d){if(!d)return '—';const t=new Date(d);return t.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})+' '+t.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});}
+function ago(d){if(!d)return '—';const s=Math.floor((Date.now()-new Date(d).getTime())/1000);if(s<60)return s+'s ago';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago';}
+function daysInactive(u){const la=u.lastActivity||u.registeredAt||u.created;if(!la)return 999;return Math.floor((Date.now()-new Date(la).getTime())/86400000);}
+function kycBadge(k){const m={approved:'kyc-approved',pending:'kyc-pending',pending_additional:'kyc-pending',not_started:'kyc-not-started',restricted:'kyc-restricted'};const t=k||'not_started';return `<span class="kyc-badge ${m[t]||'kyc-not-started'}">${(t||'—').replace(/_/g,' ')}</span>`;}
+function statusBadge(s){const m={active:'badge-active',blocked:'badge-blocked',dormant:'badge-dormant',inactive:'badge-inactive'};return `<span class="badge ${m[s]||'badge-inactive'}">${s||'—'}</span>`;}
+function lpBadge(s){return `<span class="lp-stage lp-${s||'new'}">${(s||'new').replace(/_/g,' ')}</span>`;}
+function escHTML(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
+function tagClass(t){const m={'VIP':'tag-vip','At Risk':'tag-at-risk','Dormant':'tag-dormant','KYC Pending':'tag-kyc','First Deposit':'tag-ftd','IB Referral':'tag-ib','Do Not Disturb':'tag-dnd'};return m[t]||'tag-dormant';}
+function logAudit(action,details,clientId){const log=JSON.parse(localStorage.getItem('mbc_crm_audit_log')||'[]');log.unshift({id:'aud_'+Date.now(),action,details,clientId:clientId||null,actor:currentStaff.id,actorName:currentStaff.firstName+' '+currentStaff.lastName,ts:new Date().toISOString()});localStorage.setItem('mbc_crm_audit_log',JSON.stringify(log.slice(0,500)));}
+function broadcastCRMAction(action,payload){const bc=new BroadcastChannel('mbc-crm-sync');const nonce='act_'+Date.now()+'_'+Math.random().toString(36).slice(2);const cmd={action,payload,ts:Date.now(),nonce,adminId:currentStaff.username,applied:false};localStorage.setItem('mbc_crm_admin_action',JSON.stringify(cmd));bc.postMessage(cmd);bc.close();}
+function toast(msg,type='info'){const wrap=document.getElementById('toastWrap');const el=document.createElement('div');el.className='crm-toast'+(type==='success'?' crm-toast-success':type==='error'?' crm-toast-error':'');el.textContent=msg;wrap.appendChild(el);setTimeout(()=>el.classList.add('show'),10);setTimeout(()=>{el.classList.remove('show');setTimeout(()=>el.remove(),400);},3500);}
+function openModal(id){document.getElementById('modal-'+id).style.display='flex';if(id==='addTask')populateTaskClientSel();}
+function closeModal(id){document.getElementById('modal-'+id).style.display='none';}
+function showSection(id,el){document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));document.getElementById('sec-'+id).classList.add('active');document.querySelectorAll('.crm-nav-item').forEach(i=>i.classList.remove('active'));if(el)el.classList.add('active');document.getElementById('topbarTitle').textContent=el?el.textContent.trim():id;const renders={dashboard:renderDashboard,clients:renderClients,leads:renderLeads,tasks:renderTasks};if(renders[id])renders[id]();}
+function doLogout(){localStorage.removeItem('mbc_crm_session');window.location.href='index.html';}
+
+// DASHBOARD
+function renderDashboard(){
+  const clients=getMyClients();const leads=getMyLeads();const tasks=getMyTasks();const deps=getDeposits();
+  let totalBalance=0,ftds=0;
+  clients.forEach(u=>{const p=getPortfolio(u.id);if(p)totalBalance+=(p.balance||0);if(u.ftdDate)ftds++;});
+  const myDeps=deps.filter(d=>clients.some(c=>c.id===d.userId));
+  const pendingDeps=myDeps.filter(d=>d.status==='pending');
+  const html=s=>`<div class="crm-stat"><div class="crm-stat-top"></div><div class="crm-stat-label">${s.l}</div><div class="crm-stat-val">${s.v}</div><div class="crm-stat-change up">${s.c}</div></div>`;
+  document.getElementById('dashStats').innerHTML=[
+    {l:'My Clients',v:clients.length,c:'Assigned to me'},
+    {l:'My Leads',v:leads.length,c:leads.filter(l=>l.status==='new').length+' new'},
+    {l:'FTDs',v:ftds,c:clients.length>0?((ftds/clients.length*100).toFixed(0)+'% rate'):''},
+    {l:'Client AUM',v:fmtMoney(totalBalance),c:'Total balance'}
+  ].map(html).join('');
+  // Tasks due today/overdue
+  const today=new Date().toDateString();const urgent=tasks.filter(t=>t.status==='pending'&&(new Date(t.dueAt).toDateString()===today||new Date(t.dueAt)<new Date()));
+  const badge=document.getElementById('taskBadge');const ptasks=tasks.filter(t=>t.status==='pending');badge.textContent=ptasks.length;badge.style.display=ptasks.length>0?'inline':'none';
+  document.getElementById('dashTasks').innerHTML=urgent.slice(0,5).map(t=>`<div class="timeline-item task-priority-${t.priority}"><div class="timeline-dot ${t.priority==='high'?'':t.priority==='medium'?'gold':'green'}"></div><div style="flex:1"><div style="font-size:13px;font-weight:600">${escHTML(t.title)}</div><div style="font-size:11px;color:var(--t2)">Due ${fmtDate(t.dueAt)} · ${t.priority} priority</div></div><button class="table-action green" onclick="completeTask('${t.id}')">Done</button></div>`).join('')||'<div style="padding:16px;text-align:center;color:var(--up);font-size:13px"><i class="fas fa-check-circle"></i> No urgent tasks</div>';
+  // Pending deposits
+  document.getElementById('dashDeps').innerHTML=pendingDeps.slice(0,5).map(d=>{const u=clients.find(c=>c.id===d.userId)||{};return `<div class="timeline-item"><div class="timeline-dot gold"></div><div><div style="font-size:13px;font-weight:600">${escHTML((u.firstName||'')+' '+(u.lastName||''))} — ${fmtMoney(d.amount)}</div><div style="font-size:11px;color:var(--t2)">${ago(d.requestDate||d.createdAt)} · Awaiting admin</div></div></div>`;}).join('')||'<div style="padding:16px;text-align:center;color:var(--t2);font-size:13px">No pending deposits</div>';
+  // Recent leads
+  document.getElementById('dashLeads').innerHTML=leads.slice(0,5).map(l=>`<div class="timeline-item"><div class="timeline-dot blue"></div><div><div style="font-size:13px;font-weight:600">${escHTML(l.firstName+' '+l.lastName)}</div><div style="font-size:11px;color:var(--t2)">${lpBadge(l.status)} · ${ago(l.updatedAt||l.createdAt)}</div></div></div>`).join('')||'<div style="padding:16px;text-align:center;color:var(--t2);font-size:13px">No leads</div>';
+  // Client alerts (dormant, low balance)
+  const alerts=clients.filter(c=>{const d=daysInactive(c);const p=getPortfolio(c.id)||{balance:0};return d>=7||p.balance<500;}).slice(0,5);
+  document.getElementById('dashAlerts').innerHTML=alerts.map(u=>{const d=daysInactive(u);const p=getPortfolio(u.id)||{balance:0};return `<div class="timeline-item"><div class="timeline-dot"></div><div style="flex:1"><div style="font-size:13px;font-weight:600">${escHTML(u.firstName+' '+u.lastName)}</div><div style="font-size:11px;color:var(--t2)">${d>=7?d+'d inactive':'Low balance '}<span style="color:var(--gold)">${fmtMoney(p.balance)}</span></div></div><button class="table-action" onclick="openClientDrawer('${u.id}')">View</button></div>`; }).join('')||'<div style="padding:16px;text-align:center;color:var(--up);font-size:13px"><i class="fas fa-check-circle"></i> No alerts</div>';
+}
+
+// MY CLIENTS (card grid)
+function renderClients(){
+  let clients=getMyClients();
+  const q=(document.getElementById('clientSearch').value||'').toLowerCase();const stF=document.getElementById('clientStatusFilter').value;const sortF=document.getElementById('clientSortFilter').value;
+  clients=clients.filter(u=>{const name=((u.firstName||'')+' '+(u.lastName||'')).toLowerCase();return (!q||name.includes(q)||(u.email||'').toLowerCase().includes(q))&&(!stF||(u.crmStatus||'active')===stF);});
+  if(sortF==='balance')clients.sort((a,b)=>(getPortfolio(b.id)?.balance||0)-(getPortfolio(a.id)?.balance||0));
+  else if(sortF==='activity')clients.sort((a,b)=>new Date(b.lastActivity||0)-new Date(a.lastActivity||0));
+  else clients.sort((a,b)=>(a.firstName||'').localeCompare(b.firstName||''));
+  const grid=document.getElementById('clientGrid');
+  if(!clients.length){grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><i class="fas fa-users"></i>No clients assigned yet</div>`;return;}
+  grid.innerHTML=clients.map(u=>{
+    const p=getPortfolio(u.id)||{balance:0};const d=daysInactive(u);const tags=(u.tags||[]).slice(0,2).map(t=>`<span class="tag-pill ${tagClass(t)}">${t}</span>`).join('');
+    return `<div class="client-card" onclick="openClientDrawer('${u.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+        <div><div class="client-card-name">${escHTML(u.firstName||'')} ${escHTML(u.lastName||'')}</div><div class="client-card-email">${escHTML(u.email||'')}</div></div>
+        ${statusBadge(u.crmStatus||'active')}
+      </div>
+      <div class="client-card-stats">
+        <div><div class="client-card-stat-label">Balance</div><div class="client-card-stat-val">${fmtMoney(p.balance)}</div></div>
+        <div><div class="client-card-stat-label">Deposited</div><div class="client-card-stat-val">${fmtMoney(u.totalDeposited)}</div></div>
+        <div><div class="client-card-stat-label">Inactive</div><div class="client-card-stat-val" style="color:${d>=30?'var(--dn)':d>=14?'var(--gold)':'var(--up)'}">${d===999?'—':d+'d'}</div></div>
+      </div>
+      ${tags?`<div style="margin-top:10px">${tags}</div>`:''}
+      <div style="display:flex;gap:6px;margin-top:12px">
+        ${kycBadge(u.kycStatus)}
+        ${(p.positions||[]).length>0?`<span class="badge badge-active" style="font-size:10px">${(p.positions||[]).length} pos open</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// CLIENT DRAWER
+var currentDrawerClient=null;
+function openClientDrawer(uid){const u=getUsers().find(x=>x.id===uid);if(!u)return;currentDrawerClient=uid;document.getElementById('drawerName').textContent=u.firstName+' '+u.lastName;document.getElementById('drawerSub').textContent=u.email||uid;document.getElementById('clientDrawer').style.display='block';document.getElementById('drawerOverlay').style.display='block';switchDrawerTab('overview',document.querySelector('.crm-drawer-tab'));}
+function closeDrawer(){document.getElementById('clientDrawer').style.display='none';document.getElementById('drawerOverlay').style.display='none';currentDrawerClient=null;}
+function switchDrawerTab(tab,el){document.querySelectorAll('.crm-drawer-tab').forEach(t=>t.classList.remove('active'));if(el)el.classList.add('active');renderDrawerTab(tab);}
+function renderDrawerTab(tab){
+  if(!currentDrawerClient)return;
+  const u=getUsers().find(x=>x.id===currentDrawerClient)||{};
+  const p=getPortfolio(currentDrawerClient)||{balance:0,positions:[],orders:[],history:[]};
+  let html='';
+  if(tab==='overview'){
+    const tags=(u.tags||[]).map(t=>`<span class="tag-pill ${tagClass(t)}">${t}</span>`).join(' ')||'<span style="color:var(--t2);font-size:12px">No tags</span>';
+    const d=daysInactive(u);
+    html=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div><div style="font-size:11px;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Balance</div><div style="font-size:18px;font-weight:700">${fmtMoney(p.balance)}</div></div>
+      <div><div style="font-size:11px;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Total Deposited</div><div style="font-size:18px;font-weight:700">${fmtMoney(u.totalDeposited)}</div></div>
+      <div><div style="font-size:11px;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">KYC</div>${kycBadge(u.kycStatus)}</div>
+      <div><div style="font-size:11px;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Status</div>${statusBadge(u.crmStatus||'active')}</div>
+      <div><div style="font-size:11px;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">FTD</div><div style="font-size:13px">${fmtDate(u.ftdDate)} ${u.ftdAmount?'('+fmtMoney(u.ftdAmount)+')':''}</div></div>
+      <div><div style="font-size:11px;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Last Active</div><div style="font-size:13px;color:${d>=30?'var(--dn)':d>=14?'var(--gold)':'var(--text)'}">${d===999?'Never':d+'d ago'}</div></div>
+      <div><div style="font-size:11px;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Email</div><div style="font-size:13px">${escHTML(u.email||'—')}</div></div>
+      <div><div style="font-size:11px;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">Phone</div><div style="font-size:13px">${escHTML(u.phone||'—')}</div></div>
+    </div>
+    <div style="margin-bottom:14px"><div style="font-size:11px;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Tags</div>${tags}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="openCallModal('${u.id}')">Log Call</button>
+      <button class="btn btn-ghost" onclick="addNoteForClient('${u.id}')">Add Note</button>
+      <button class="btn btn-ghost" onclick="createTaskForClient('${u.id}')">Add Task</button>
+    </div>`;
+  } else if(tab==='portfolio'){
+    const positions=p.positions||[];const history=(p.history||[]).slice(0,15);
+    let totalPnL=0;positions.forEach(pos=>totalPnL+=(pos.pnl||0));
+    html=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+      <div><div style="font-size:11px;color:var(--t2);margin-bottom:3px">Cash Balance</div><div style="font-size:15px;font-weight:700">${fmtMoney(p.balance)}</div></div>
+      <div><div style="font-size:11px;color:var(--t2);margin-bottom:3px">Open Positions</div><div style="font-size:15px;font-weight:700">${positions.length}</div></div>
+      <div><div style="font-size:11px;color:var(--t2);margin-bottom:3px">Open P&L</div><div class="${totalPnL>=0?'pnl-positive':'pnl-negative'}">${totalPnL.toFixed(2)}</div></div>
+    </div>
+    ${positions.length?`<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">Open Positions</div>
+    <table class="crm-table"><thead><tr><th>Symbol</th><th>Side</th><th>Qty</th><th>Entry</th><th>P&L</th></tr></thead><tbody>${positions.map(pos=>`<tr><td style="font-weight:700">${escHTML(pos.sym||pos.symbol||'')}</td><td>${pos.side||''}</td><td>${pos.qty||0}</td><td>${pos.entry||pos.fillPrice||0}</td><td class="${(pos.pnl||0)>=0?'pnl-positive':'pnl-negative'}">${(pos.pnl||0).toFixed(2)}</td></tr>`).join('')}</tbody></table></div>`:''}
+    <div><div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">Trade History</div>
+    ${history.map(h=>`<div class="timeline-item"><div class="timeline-dot ${h.type==='deposit'||h.side==='credit'?'green':h.pnl&&h.pnl<0?'':''}"></div><div style="flex:1"><div style="font-size:13px">${escHTML(h.label||h.type||'')} ${h.sym||''}</div><div style="font-size:11px;color:var(--t2)">${fmtMoney(h.amount)} · ${fmtTime(h.timestamp||h.time)}</div></div>${h.pnl!==null&&h.pnl!==undefined?`<span class="${h.pnl>=0?'pnl-positive':'pnl-negative'}">${h.pnl.toFixed(2)}</span>`:''}</div>`).join('')||'<div style="color:var(--t2);font-size:13px">No history</div>'}</div>`;
+  } else if(tab==='deposits'){
+    const deps=getDeposits().filter(d=>d.userId===currentDrawerClient);
+    html=deps.length?`<table class="crm-table"><thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Status</th></tr></thead><tbody>${deps.map(d=>`<tr><td style="font-size:12px">${fmtDate(d.requestDate||d.createdAt)}</td><td style="font-weight:700">${fmtMoney(d.amount)}</td><td style="font-size:12px">${escHTML(d.method||'—')}</td><td>${statusBadge(d.status)}</td></tr>`).join('')}</tbody></table>`:`<div class="empty-state"><i class="fas fa-coins"></i>No deposits</div>`;
+  } else if(tab==='notes'){
+    const notes=getNotes().filter(n=>n.clientId===currentDrawerClient);const calls=getCalls().filter(c=>c.clientId===currentDrawerClient);
+    const all=[...notes.map(n=>({...n,_t:n.type||'note',_d:n.createdAt,content:n.content})),...calls.map(c=>({...c,_t:'call',_d:c.calledAt,content:c.notes}))].sort((a,b)=>new Date(b._d)-new Date(a._d));
+    html=`<div style="display:flex;gap:8px;margin-bottom:16px">
+      <button class="btn btn-primary" onclick="openCallModal('${u.id}')">Log Call</button>
+      <button class="btn btn-ghost" onclick="addNoteForClient('${u.id}')">Add Note</button>
+    </div>
+    ${all.map(n=>`<div class="timeline-item"><div class="timeline-dot ${n._t==='call'?'gold':'blue'}"></div><div style="flex:1"><div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span class="badge ${n._t==='call'?'badge-inactive':'badge-active'}" style="font-size:10px">${n._t}</span>${n.outcome?`<span style="font-size:11px;color:var(--t2)">${n.outcome}</span>`:''}</div><div style="font-size:13px">${escHTML(n.content||'—')}</div><div style="font-size:11px;color:var(--t2)">${ago(n._d)} · ${escHTML(n.authorName||n.agentName||'—')}${n.duration?' · '+n.duration+'min':''}</div></div></div>`).join('')||'<div style="color:var(--t2);font-size:13px">No notes or calls</div>'}`;
+  } else if(tab==='tasks'){
+    const tasks=getTasks().filter(t=>t.clientId===currentDrawerClient);
+    html=`<div style="margin-bottom:12px"><button class="btn btn-primary" onclick="createTaskForClient('${u.id}')">Add Task</button></div>
+    ${tasks.map(t=>`<div class="timeline-item task-priority-${t.priority}"><div class="timeline-dot ${t.priority==='high'?'':t.priority==='medium'?'gold':'green'}"></div><div style="flex:1"><div style="font-size:13px;font-weight:600;text-decoration:${t.status==='done'?'line-through':''}">${escHTML(t.title)}</div><div style="font-size:11px;color:var(--t2)">Due ${fmtDate(t.dueAt)} · ${t.priority}</div></div>${t.status==='pending'?`<button class="table-action green" onclick="completeTask('${t.id}');renderDrawerTab('tasks')">Done</button>`:''}</div>`).join('')||'<div style="color:var(--t2);font-size:13px">No tasks</div>'}`;
+  }
+  document.getElementById('drawerBody').innerHTML=html;
+}
+
+// LEADS
+function renderLeads(){
+  const leads=getMyLeads();const q=(document.getElementById('leadSearch').value||'').toLowerCase();const stF=document.getElementById('leadStatusFilter').value;
+  const filtered=leads.filter(l=>{const name=((l.firstName||'')+' '+(l.lastName||'')).toLowerCase();return (!q||name.includes(q)||(l.email||'').toLowerCase().includes(q))&&(!stF||l.status===stF);});
+  document.getElementById('leadsTbody').innerHTML=filtered.map(l=>`<tr>
+    <td><div style="font-weight:600">${escHTML(l.firstName||'')} ${escHTML(l.lastName||'')}</div><div style="font-size:11px;color:var(--t2)">${escHTML(l.country||'—')}</div></td>
+    <td style="font-size:12px">${escHTML(l.email||'—')}<br><span style="color:var(--t2)">${escHTML(l.phone||'')}</span></td>
+    <td><span class="badge badge-active" style="font-size:11px">${escHTML(l.source||'—')}</span></td>
+    <td>${lpBadge(l.status)}</td>
+    <td style="font-size:12px">${fmtDate(l.createdAt)}</td>
+    <td style="font-size:12px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHTML(l.notes||'—')}</td>
+    <td><button class="table-action" onclick="advanceLead('${l.id}')">Advance</button><button class="table-action" onclick="updateLeadNote('${l.id}')">Note</button></td></tr>`).join('')||`<tr><td colspan="7"><div class="empty-state"><i class="fas fa-funnel-dollar"></i>No leads</div></td></tr>`;
+}
+function advanceLead(id){const p=['new','contacted','qualified','interested','kyc_pending','kyc_approved','ftd','active_trader','dormant','churned'];const leads=getLeads();const idx=leads.findIndex(l=>l.id===id);if(idx<0)return;const ci=p.indexOf(leads[idx].status);if(ci<0||ci>=p.length-1){toast('Already at final stage');return;}leads[idx].status=p[ci+1];leads[idx].updatedAt=new Date().toISOString();ls('mbc_crm_leads',leads);renderLeads();toast('Lead advanced to '+leads[idx].status,'success');}
+function updateLeadNote(id){const note=prompt('Enter note for this lead:');if(!note)return;const leads=getLeads();const idx=leads.findIndex(l=>l.id===id);if(idx<0)return;leads[idx].notes=note;leads[idx].updatedAt=new Date().toISOString();ls('mbc_crm_leads',leads);renderLeads();toast('Note saved');}
+
+// TASKS
+function renderTasks(){
+  const tasks=getMyTasks();const users=getUsers();
+  const q=(document.getElementById('taskSearch').value||'').toLowerCase();const pF=document.getElementById('taskPriorityFilter').value;const stF=document.getElementById('taskStatusFilter').value;
+  const filtered=tasks.filter(t=>(!q||t.title.toLowerCase().includes(q))&&(!pF||t.priority===pF)&&(!stF||t.status===stF)).sort((a,b)=>{const pOrder={high:0,medium:1,low:2};return (pOrder[a.priority]||1)-(pOrder[b.priority]||1)||new Date(a.dueAt)-new Date(b.dueAt);});
+  const container=document.getElementById('tasksContainer');
+  container.innerHTML=filtered.map(t=>{const u=t.clientId?users.find(x=>x.id===t.clientId):null;const overdue=t.status==='pending'&&new Date(t.dueAt)<new Date();return `<div class="crm-card task-priority-${t.priority}" style="margin-bottom:12px;padding:14px 16px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:700;text-decoration:${t.status==='done'?'line-through':''};margin-bottom:4px">${escHTML(t.title)}</div>
+        ${t.description?`<div style="font-size:12px;color:var(--t2);margin-bottom:6px">${escHTML(t.description)}</div>`:''}
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <span class="badge ${t.priority==='high'?'badge-blocked':t.priority==='medium'?'badge-dormant':'badge-active'}" style="font-size:10px">${t.priority}</span>
+          <span style="font-size:11px;color:${overdue?'var(--dn)':'var(--t2)'}">Due ${fmtDate(t.dueAt)}${overdue?' ⚠ Overdue':''}</span>
+          ${u?`<span style="font-size:11px;color:var(--blue)">${escHTML(u.firstName+' '+u.lastName)}</span>`:''}
+          ${t.status==='done'?`<span style="font-size:11px;color:var(--up)">✓ Completed ${fmtDate(t.completedAt)}</span>`:''}
+        </div>
+      </div>
+      ${t.status==='pending'?`<div style="display:flex;gap:6px"><button class="table-action green" onclick="completeTask('${t.id}')">Complete</button><button class="table-action red" onclick="deleteTask('${t.id}')">Del</button></div>`:`<button class="table-action red" onclick="deleteTask('${t.id}')">Del</button>`}
+    </div>
+  </div>`; }).join('')||`<div class="empty-state"><i class="fas fa-tasks"></i>No tasks</div>`;
+}
+function completeTask(id){const tasks=getTasks();const idx=tasks.findIndex(t=>t.id===id);if(idx<0)return;tasks[idx].status='done';tasks[idx].completedAt=new Date().toISOString();ls('mbc_crm_tasks',tasks);toast('Task completed','success');renderTasks();renderDashboard();}
+function deleteTask(id){if(!confirm('Delete this task?'))return;ls('mbc_crm_tasks',getTasks().filter(t=>t.id!==id));renderTasks();}
+function createTask(){
+  const title=document.getElementById('tk_title').value.trim();const desc=document.getElementById('tk_desc').value.trim();const priority=document.getElementById('tk_priority').value;const due=document.getElementById('tk_due').value;const clientId=document.getElementById('tk_client').value;
+  if(!title){toast('Task title required','error');return;}
+  const tasks=getTasks();tasks.push({id:'task_'+Date.now(),assignedTo:currentStaff.id,clientId:clientId||null,title,description:desc,priority,status:'pending',dueAt:due?new Date(due).toISOString():new Date(Date.now()+86400000).toISOString(),createdAt:new Date().toISOString(),completedAt:null});
+  ls('mbc_crm_tasks',tasks);closeModal('addTask');toast('Task added','success');renderTasks();renderDashboard();document.getElementById('tk_title').value='';document.getElementById('tk_desc').value='';
+}
+function createTaskForClient(uid){document.getElementById('tk_client').value=uid;openModal('addTask');}
+function populateTaskClientSel(){const sel=document.getElementById('tk_client');if(sel.options.length>1)return;getMyClients().forEach(u=>{const o=document.createElement('option');o.value=u.id;o.textContent=u.firstName+' '+u.lastName;sel.appendChild(o);});}
+
+// CALL / NOTE
+var _callClientId=null;
+function openCallModal(uid){_callClientId=uid;const u=getUsers().find(x=>x.id===uid)||{};document.getElementById('callClientName').textContent=(u.firstName||'')+' '+(u.lastName||'');openModal('logCall');}
+function executeLogCall(){
+  const uid=_callClientId;if(!uid){toast('No client','error');return;}
+  const duration=parseInt(document.getElementById('callDuration').value)||0;const outcome=document.getElementById('callOutcome').value;const notes=document.getElementById('callNotes').value.trim();
+  const calls=getCalls();calls.unshift({id:'call_'+Date.now(),clientId:uid,agentId:currentStaff.id,agentName:currentStaff.firstName+' '+currentStaff.lastName,duration,outcome,notes,calledAt:new Date().toISOString()});
+  ls('mbc_crm_calls',calls);
+  const users=getUsers();const idx=users.findIndex(u=>u.id===uid);if(idx>=0){users[idx].lastActivity=new Date().toISOString();ls('mbc_users',users);}
+  logAudit('note','Call logged for client '+uid,uid);closeModal('logCall');toast('Call logged','success');if(currentDrawerClient===uid)renderDrawerTab('notes');_callClientId=null;
+}
+function addNoteForClient(uid){const content=prompt('Enter note:');if(!content)return;const notes=getNotes();notes.unshift({id:'note_'+Date.now(),clientId:uid,authorId:currentStaff.id,authorName:currentStaff.firstName+' '+currentStaff.lastName,content,type:'note',createdAt:new Date().toISOString()});ls('mbc_crm_notes',notes);toast('Note saved','success');if(currentDrawerClient===uid)renderDrawerTab('notes');}
+
+renderDashboard();
+</script>
+</body>
+</html>

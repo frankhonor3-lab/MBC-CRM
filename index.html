@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM Login — MBCtrading</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+body { background: #080a10; }
+.crm-login-side .form-group input { background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.12); }
+.crm-login-side .form-group input:focus { border-color: var(--red); }
+.login-btn { width: 100%; padding: 13px; background: var(--red); color: #fff; border: none; border-radius: var(--radius); font-size: 15px; font-weight: 600; cursor: pointer; font-family: var(--font); transition: background .2s; margin-top: 4px; }
+.login-btn:hover { background: var(--red-dark); }
+.alert { padding: 12px 14px; border-radius: 6px; font-size: 13px; margin-bottom: 16px; }
+.alert-error { background: rgba(239,83,80,.1); border: 1px solid rgba(239,83,80,.3); color: #ff6b7a; }
+.alert-success { background: rgba(38,201,163,.1); border: 1px solid rgba(38,201,163,.3); color: var(--up); }
+.demo-creds { margin-top: 24px; padding: 14px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.07); border-radius: 8px; }
+.demo-creds h4 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--t3); margin-bottom: 10px; }
+.demo-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,.04); }
+.demo-row:last-child { border-bottom: none; }
+.demo-row span { font-size: 12px; color: var(--t2); }
+.demo-row code { font-size: 11px; font-family: var(--font-data); color: var(--blue); background: rgba(79,168,255,.08); padding: 2px 6px; border-radius: 3px; }
+.demo-row button { font-size: 11px; color: var(--red); background: none; border: none; cursor: pointer; font-family: var(--font); font-weight: 600; }
+.demo-row button:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="crm-login-layout">
+  <!-- LEFT HERO -->
+  <div class="crm-login-hero">
+    <div class="crm-login-hero-logo">MBC<span>trading</span></div>
+    <div class="crm-login-hero-subtitle">CRM &amp; Back Office</div>
+    <h2>Manage.<br>Convert.<br>Retain.</h2>
+    <p>The complete broker back-office suite — manage agents, track leads, monitor client accounts, and control the full trading pipeline from one place.</p>
+    <div class="crm-login-hero-stats">
+      <div>
+        <div class="crm-login-hero-stat-val" id="hero-agents">—</div>
+        <div class="crm-login-hero-stat-label">Active Agents</div>
+      </div>
+      <div>
+        <div class="crm-login-hero-stat-val" id="hero-clients">—</div>
+        <div class="crm-login-hero-stat-label">Managed Clients</div>
+      </div>
+      <div>
+        <div class="crm-login-hero-stat-val" id="hero-aum">—</div>
+        <div class="crm-login-hero-stat-label">Platform AUM</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT LOGIN FORM -->
+  <div class="crm-login-side">
+    <div style="margin-bottom:24px">
+      <a href="../4.6/4.6/workspace/mbctrading/clone/index.html" style="font-size:18px;font-weight:800;color:var(--text);letter-spacing:-.3px">MBC<span style="color:var(--red)">trading</span></a>
+      <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(217,18,34,.6);margin-left:10px">CRM</span>
+    </div>
+    <div class="crm-login-side-header">
+      <h3>Staff Sign In</h3>
+      <p>Select your role and enter your credentials</p>
+    </div>
+
+    <!-- ROLE TABS -->
+    <div class="crm-role-tabs" id="roleTabs">
+      <button class="crm-role-tab active" onclick="setRole('agent',this)">Agent</button>
+      <button class="crm-role-tab" onclick="setRole('manager',this)">Manager</button>
+      <button class="crm-role-tab" onclick="setRole('ret_manager',this)">Retention</button>
+      <button class="crm-role-tab" onclick="setRole('admin',this)">Admin</button>
+    </div>
+
+    <div id="loginError" class="alert alert-error" style="display:none"></div>
+
+    <div class="form-group">
+      <label id="usernameLabel">Username</label>
+      <input type="text" id="loginUser" placeholder="Your username" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <div style="position:relative">
+        <input type="password" id="loginPw" placeholder="••••••••••" autocomplete="current-password" style="padding-right:42px">
+        <button onclick="togglePw()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--t2);cursor:pointer;font-size:15px">👁</button>
+      </div>
+    </div>
+
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">Sign In as <span id="loginRoleLabel">Agent</span></button>
+
+    <div class="demo-creds">
+      <h4>Demo Credentials</h4>
+      <div class="demo-row">
+        <span>Agent</span>
+        <code>sarah.c / Agent123!</code>
+        <button onclick="fillCreds('sarah.c','Agent123!','agent')">Use</button>
+      </div>
+      <div class="demo-row">
+        <span>Manager</span>
+        <code>james.r / Manager123!</code>
+        <button onclick="fillCreds('james.r','Manager123!','manager')">Use</button>
+      </div>
+      <div class="demo-row">
+        <span>Retention</span>
+        <code>maria.h / Ret123!</code>
+        <button onclick="fillCreds('maria.h','Ret123!','ret_manager')">Use</button>
+      </div>
+      <div class="demo-row">
+        <span>Admin</span>
+        <code>admin / Admin@MBC2024</code>
+        <button onclick="fillCreds('admin','Admin@MBC2024','admin')">Use</button>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;text-align:center">
+      <a href="http://localhost:8787/index.html" style="font-size:12px;color:var(--t2)">← Back to Trading Platform</a>
+    </div>
+  </div>
+</div>
+
+<script>
+var currentRole = 'agent';
+const ADMIN_PW_HASH = '76cf565122358cc4b49b16a7108b99515f8a8deff56ab4a801b180c38ccc4426';
+
+async function hashStr(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function setRole(role, btn) {
+  currentRole = role;
+  document.querySelectorAll('.crm-role-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  const labels = { agent:'Agent', manager:'Manager', ret_manager:'Retention Mgr', admin:'Admin' };
+  document.getElementById('loginRoleLabel').textContent = labels[role];
+  document.getElementById('usernameLabel').textContent = role === 'admin' ? 'Admin Username' : 'Username';
+  document.getElementById('loginError').style.display = 'none';
+}
+
+function togglePw() {
+  const inp = document.getElementById('loginPw');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+function showError(msg) {
+  const el = document.getElementById('loginError');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function fillCreds(user, pw, role) {
+  document.getElementById('loginUser').value = user;
+  document.getElementById('loginPw').value = pw;
+  const tabs = document.querySelectorAll('.crm-role-tab');
+  const roleMap = { agent:0, manager:1, ret_manager:2, admin:3 };
+  if (roleMap[role] !== undefined) setRole(role, tabs[roleMap[role]]);
+}
+
+async function doLogin() {
+  document.getElementById('loginError').style.display = 'none';
+  const user = document.getElementById('loginUser').value.trim();
+  const pw   = document.getElementById('loginPw').value;
+  if (!user || !pw) { showError('Please enter username and password.'); return; }
+
+  const btn = document.getElementById('loginBtn');
+  btn.textContent = 'Signing in…';
+  btn.disabled = true;
+
+  if (currentRole === 'admin') {
+    if (user !== 'admin' && user !== 'admin@mbctrading.com') {
+      showError('Invalid admin credentials.'); btn.innerHTML = 'Sign In as <span id="loginRoleLabel">Admin</span>'; btn.disabled=false; return;
+    }
+    const hash = await hashStr(pw);
+    if (hash !== ADMIN_PW_HASH) {
+      showError('Invalid admin credentials.'); btn.innerHTML = 'Sign In as <span id="loginRoleLabel">Admin</span>'; btn.disabled=false; return;
+    }
+    localStorage.setItem('mbc_crm_session', JSON.stringify({ id:'admin', username:'admin', role:'admin', time:Date.now() }));
+    window.location.href = 'admin.html';
+    return;
+  }
+
+  // Staff check
+  const staff = JSON.parse(localStorage.getItem('mbc_crm_staff') || '[]');
+  const member = staff.find(s => {
+    try {
+      return s.role === currentRole && s.username.toLowerCase() === user.toLowerCase() && atob(s.password) === pw && s.status === 'active';
+    } catch(e) { return false; }
+  });
+
+  if (!member) {
+    showError('Invalid credentials or account inactive.');
+    btn.innerHTML = 'Sign In as <span id="loginRoleLabel">' + (currentRole === 'ret_manager' ? 'Retention Mgr' : currentRole.charAt(0).toUpperCase() + currentRole.slice(1)) + '</span>';
+    btn.disabled = false;
+    return;
+  }
+
+  // Update lastLogin
+  const idx = staff.findIndex(s => s.id === member.id);
+  staff[idx].lastLogin = new Date().toISOString();
+  localStorage.setItem('mbc_crm_staff', JSON.stringify(staff));
+  localStorage.setItem('mbc_crm_session', JSON.stringify({ id:member.id, username:member.username, role:member.role, time:Date.now() }));
+
+  const redirect = { manager:'manager.html', ret_manager:'ret-manager.html', agent:'agent.html' };
+  window.location.href = redirect[currentRole] || 'agent.html';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+// ─── SEED DEFAULT DATA ───
+function seedData() {
+  const existing = JSON.parse(localStorage.getItem('mbc_crm_staff') || '[]');
+  if (existing.length > 0) return;
+
+  const now = new Date().toISOString();
+  const staff = [
+    {
+      id: 'stf_manager1',
+      firstName: 'James', lastName: 'Rhodes',
+      username: 'james.r', email: 'james.rhodes@mbctrading.com', phone: '+1 212 555 0101',
+      role: 'manager', managerId: null, status: 'active',
+      password: btoa('Manager123!'),
+      created: now, lastLogin: null,
+      permissions: { canAdjustBalance: true, canApproveDeposits: true, canBlockClients: true, canReassignClients: true, canCreateAgents: true }
+    },
+    {
+      id: 'stf_agent1',
+      firstName: 'Sarah', lastName: 'Connor',
+      username: 'sarah.c', email: 'sarah.connor@mbctrading.com', phone: '+1 212 555 0102',
+      role: 'agent', managerId: 'stf_manager1', status: 'active',
+      password: btoa('Agent123!'),
+      created: now, lastLogin: null,
+      permissions: { canAdjustBalance: false, canApproveDeposits: false, canBlockClients: false, canReassignClients: false, canCreateAgents: false }
+    },
+    {
+      id: 'stf_agent2',
+      firstName: 'Mike', lastName: 'Torres',
+      username: 'mike.t', email: 'mike.torres@mbctrading.com', phone: '+1 212 555 0103',
+      role: 'agent', managerId: 'stf_manager1', status: 'active',
+      password: btoa('Agent456!'),
+      created: now, lastLogin: null,
+      permissions: { canAdjustBalance: false, canApproveDeposits: false, canBlockClients: false, canReassignClients: false, canCreateAgents: false }
+    },
+    {
+      id: 'stf_ret1',
+      firstName: 'Maria', lastName: 'Hill',
+      username: 'maria.h', email: 'maria.hill@mbctrading.com', phone: '+1 212 555 0104',
+      role: 'ret_manager', managerId: null, status: 'active',
+      password: btoa('Ret123!'),
+      created: now, lastLogin: null,
+      permissions: { canAdjustBalance: false, canApproveDeposits: false, canBlockClients: false, canReassignClients: true, canCreateAgents: false }
+    }
+  ];
+  localStorage.setItem('mbc_crm_staff', JSON.stringify(staff));
+
+  // Seed demo leads
+  const leads = [
+    { id:'lead_1', firstName:'David', lastName:'Kim', email:'david.kim@email.com', phone:'+1 646 555 0201', country:'United States', source:'paid', campaign:'Google Ads Q4', status:'interested', assignedAgentId:'stf_agent1', assignedManagerId:'stf_manager1', notes:'Interested in forex trading, asked about spreads.', createdAt:new Date(Date.now()-3*86400000).toISOString(), updatedAt:new Date(Date.now()-86400000).toISOString(), convertedUserId:null },
+    { id:'lead_2', firstName:'Emma', lastName:'Wilson', email:'emma.w@email.com', phone:'+44 207 555 0202', country:'United Kingdom', source:'organic', campaign:'', status:'contacted', assignedAgentId:'stf_agent1', assignedManagerId:'stf_manager1', notes:'Found us via Google search.', createdAt:new Date(Date.now()-5*86400000).toISOString(), updatedAt:new Date(Date.now()-2*86400000).toISOString(), convertedUserId:null },
+    { id:'lead_3', firstName:'Lucas', lastName:'Ferrari', email:'lucas.f@email.com', phone:'+39 02 555 0203', country:'Italy', source:'referral', campaign:'Partner-AFF001', status:'new', assignedAgentId:'stf_agent2', assignedManagerId:'stf_manager1', notes:'', createdAt:new Date(Date.now()-86400000).toISOString(), updatedAt:new Date(Date.now()-86400000).toISOString(), convertedUserId:null }
+  ];
+  localStorage.setItem('mbc_crm_leads', JSON.stringify(leads));
+
+  // Assign demo client (Alex Morgan) to Sarah Connor if exists
+  const users = JSON.parse(localStorage.getItem('mbc_users') || '[]');
+  if (users.length > 0) {
+    users.forEach((u, i) => {
+      if (!u.assignedAgentId) {
+        users[i].assignedAgentId = 'stf_agent1';
+        users[i].assignedManagerId = 'stf_manager1';
+        users[i].crmStatus = users[i].crmStatus || 'active';
+        users[i].kycStatus = users[i].kycStatus || 'approved';
+        users[i].tags = users[i].tags || ['First Deposit'];
+        users[i].totalDeposited = users[i].totalDeposited || 50000;
+        users[i].ftdDate = users[i].ftdDate || new Date(Date.now()-14*86400000).toISOString();
+        users[i].ftdAmount = users[i].ftdAmount || 50000;
+      }
+    });
+    localStorage.setItem('mbc_users', JSON.stringify(users));
+  }
+
+  // Seed sample notes and calls
+  const notes = [
+    { id:'note_1', clientId:'demo001', authorId:'stf_agent1', authorName:'Sarah Connor', content:'Client called asking about withdrawals. Explained the KYC process and timeframes.', type:'call', createdAt:new Date(Date.now()-2*86400000).toISOString() },
+    { id:'note_2', clientId:'demo001', authorId:'stf_agent1', authorName:'Sarah Connor', content:'Sent educational material on options trading as requested.', type:'email', createdAt:new Date(Date.now()-86400000).toISOString() }
+  ];
+  localStorage.setItem('mbc_crm_notes', JSON.stringify(notes));
+
+  const calls = [
+    { id:'call_1', clientId:'demo001', agentId:'stf_agent1', agentName:'Sarah Connor', duration:420, outcome:'interested', notes:'Client very interested in increasing position size. Suggested depositing more funds.', calledAt:new Date(Date.now()-2*86400000).toISOString() }
+  ];
+  localStorage.setItem('mbc_crm_calls', JSON.stringify(calls));
+
+  const tasks = [
+    { id:'task_1', assignedTo:'stf_agent1', clientId:'demo001', title:'Follow up on deposit request', description:'Client mentioned they will deposit $5000 this week. Follow up.', priority:'high', status:'pending', dueAt:new Date(Date.now()+86400000).toISOString(), createdAt:now, completedAt:null },
+    { id:'task_2', assignedTo:'stf_agent1', clientId:null, title:'Review new leads from Google Ads', description:'Check 3 new leads from campaign and assign priority.', priority:'medium', status:'pending', dueAt:new Date().toISOString(), createdAt:now, completedAt:null }
+  ];
+  localStorage.setItem('mbc_crm_tasks', JSON.stringify(tasks));
+
+  // Init audit log and notifications
+  if (!localStorage.getItem('mbc_crm_audit_log')) localStorage.setItem('mbc_crm_audit_log', JSON.stringify([]));
+  if (!localStorage.getItem('mbc_crm_notifications')) localStorage.setItem('mbc_crm_notifications', JSON.stringify([]));
+}
+
+// Update hero stats
+function updateHeroStats() {
+  const staff  = JSON.parse(localStorage.getItem('mbc_crm_staff') || '[]');
+  const users  = JSON.parse(localStorage.getItem('mbc_users') || '[]');
+  const agents = staff.filter(s => s.role === 'agent' && s.status === 'active').length;
+  document.getElementById('hero-agents').textContent = agents || '—';
+  document.getElementById('hero-clients').textContent = users.length || '—';
+  let aum = 0;
+  users.forEach(u => {
+    try {
+      const p = JSON.parse(localStorage.getItem('mbc_portfolio_' + u.id) || 'null');
+      if (p) aum += (p.balance || 0);
+    } catch(e) {}
+  });
+  document.getElementById('hero-aum').textContent = aum > 0 ? '$' + (aum/1000).toFixed(0) + 'K' : '—';
+}
+
+// Check if already logged in
+(function() {
+  try {
+    const sess = JSON.parse(localStorage.getItem('mbc_crm_session') || 'null');
+    if (sess && (Date.now() - sess.time) < 8 * 3600 * 1000) {
+      const redirect = { admin:'admin.html', manager:'manager.html', ret_manager:'ret-manager.html', agent:'agent.html' };
+      if (redirect[sess.role]) { window.location.href = redirect[sess.role]; return; }
+    }
+  } catch(e) {}
+  seedData();
+  updateHeroStats();
+})();
+</script>
+</body>
+</html>

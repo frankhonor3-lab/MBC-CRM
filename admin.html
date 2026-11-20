@@ -1,0 +1,1204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel — MBCtrading CRM</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+.section { display:none; } .section.active { display:block; }
+.stat-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+.stat-row-3 { grid-template-columns:repeat(3,1fr); }
+.client-row { cursor:pointer; } .client-row:hover td { background:rgba(255,255,255,.03); }
+.crm-drawer-tabs { display:flex; border-bottom:1px solid rgba(255,255,255,.08); margin-bottom:16px; }
+.crm-drawer-tab { padding:10px 16px; font-size:13px; color:var(--t2); cursor:pointer; border-bottom:2px solid transparent; }
+.crm-drawer-tab.active { color:var(--text); border-bottom-color:var(--red); }
+.crm-drawer-panel { display:none; } .crm-drawer-panel.active { display:block; }
+.tag-pill { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; margin:2px; }
+.tag-vip { background:rgba(245,184,67,.15); color:var(--gold); }
+.tag-at-risk { background:rgba(239,83,80,.15); color:var(--dn); }
+.tag-dormant { background:rgba(255,255,255,.08); color:var(--t2); }
+.tag-kyc { background:rgba(79,168,255,.15); color:var(--blue); }
+.tag-ftd { background:rgba(38,201,163,.15); color:var(--up); }
+.tag-ib { background:rgba(167,139,250,.15); color:#a78bfa; }
+.tag-dnd { background:rgba(239,83,80,.08); color:var(--dn); }
+.perm-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid rgba(255,255,255,.05); }
+.perm-row:last-child { border-bottom:none; }
+.toggle-sw { position:relative; display:inline-block; width:36px; height:20px; }
+.toggle-sw input { opacity:0; width:0; height:0; }
+.toggle-sw .slider { position:absolute; cursor:pointer; inset:0; background:rgba(255,255,255,.12); border-radius:10px; transition:.3s; }
+.toggle-sw .slider:before { position:absolute; content:""; height:14px; width:14px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.3s; }
+.toggle-sw input:checked + .slider { background:var(--red); }
+.toggle-sw input:checked + .slider:before { transform:translateX(16px); }
+.action-bar { display:flex; gap:10px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
+.search-inp { flex:1; min-width:200px; padding:9px 14px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:8px; color:var(--text); font-size:13px; font-family:var(--font); }
+.search-inp:focus { outline:none; border-color:var(--red); }
+select.filter-sel { padding:9px 12px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:8px; color:var(--text); font-size:13px; font-family:var(--font); cursor:pointer; }
+select.filter-sel:focus { outline:none; }
+.mini-chart { height:60px; display:flex; align-items:flex-end; gap:3px; }
+.mini-bar { flex:1; background:var(--red); border-radius:3px 3px 0 0; opacity:.6; }
+.timeline-item { display:flex; gap:12px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,.04); }
+.timeline-dot { width:8px; height:8px; border-radius:50%; background:var(--red); margin-top:5px; flex-shrink:0; }
+.timeline-dot.green { background:var(--up); }
+.timeline-dot.blue { background:var(--blue); }
+.timeline-dot.gold { background:var(--gold); }
+.table-action { background:none; border:none; color:var(--blue); font-size:12px; cursor:pointer; padding:3px 6px; border-radius:4px; font-family:var(--font); }
+.table-action:hover { background:rgba(79,168,255,.1); }
+.table-action.red { color:var(--dn); }
+.table-action.red:hover { background:rgba(239,83,80,.1); }
+.kyc-badge { display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:10px; font-size:11px; font-weight:700; }
+.kyc-approved { background:rgba(38,201,163,.12); color:var(--up); }
+.kyc-pending { background:rgba(245,184,67,.12); color:var(--gold); }
+.kyc-not-started { background:rgba(255,255,255,.07); color:var(--t2); }
+.kyc-restricted { background:rgba(239,83,80,.12); color:var(--dn); }
+.lp-stage { display:inline-block; padding:2px 8px; border-radius:3px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; }
+.lp-new { background:rgba(79,168,255,.12); color:var(--blue); }
+.lp-qualified { background:rgba(167,139,250,.12); color:#a78bfa; }
+.lp-assigned { background:rgba(245,184,67,.12); color:var(--gold); }
+.lp-contacted { background:rgba(79,168,255,.15); color:var(--blue); }
+.lp-interested { background:rgba(38,201,163,.12); color:var(--up); }
+.lp-ftd { background:rgba(38,201,163,.2); color:var(--up); }
+.lp-active_trader { background:rgba(38,201,163,.25); color:var(--up); }
+.lp-dormant { background:rgba(255,255,255,.07); color:var(--t2); }
+.lp-churned { background:rgba(239,83,80,.1); color:var(--dn); }
+.deposit-row-approved td:first-child { border-left:3px solid var(--up); }
+.deposit-row-pending td:first-child { border-left:3px solid var(--gold); }
+.deposit-row-rejected td:first-child { border-left:3px solid var(--dn); }
+.crm-modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:1000; display:flex; align-items:center; justify-content:center; padding:20px; }
+.crm-modal { background:var(--surface); border:1px solid rgba(255,255,255,.1); border-radius:12px; padding:28px; width:100%; max-width:480px; }
+.crm-modal h4 { font-size:16px; font-weight:700; margin-bottom:16px; }
+.modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
+.empty-state { text-align:center; padding:60px 20px; color:var(--t2); }
+.empty-state i { font-size:40px; margin-bottom:12px; display:block; opacity:.3; }
+.client-score { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; }
+.score-high { background:rgba(38,201,163,.15); color:var(--up); }
+.score-mid { background:rgba(245,184,67,.15); color:var(--gold); }
+.score-low { background:rgba(239,83,80,.15); color:var(--dn); }
+.crm-audit-entry { padding:12px 0; border-bottom:1px solid rgba(255,255,255,.04); display:grid; grid-template-columns:160px 1fr 120px; gap:12px; align-items:start; }
+.crm-audit-action { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; padding:2px 7px; border-radius:3px; }
+.audit-deposit { background:rgba(38,201,163,.1); color:var(--up); }
+.audit-block { background:rgba(239,83,80,.1); color:var(--dn); }
+.audit-balance { background:rgba(79,168,255,.1); color:var(--blue); }
+.audit-assign { background:rgba(245,184,67,.1); color:var(--gold); }
+.audit-kyc { background:rgba(167,139,250,.1); color:#a78bfa; }
+.notif-dot { width:8px; height:8px; border-radius:50%; background:var(--red); display:inline-block; margin-right:6px; }
+.crm-notification-item { padding:12px 16px; border-bottom:1px solid rgba(255,255,255,.05); display:flex; gap:12px; cursor:pointer; }
+.crm-notification-item:hover { background:rgba(255,255,255,.02); }
+.crm-notification-item.unread { border-left:3px solid var(--red); }
+</style>
+</head>
+<body>
+<div class="crm-layout">
+  <!-- SIDEBAR -->
+  <aside class="crm-sidebar">
+    <div class="crm-sidebar-logo">MBC<span>trading</span> <span class="crm-sidebar-logo-tag">CRM</span></div>
+    <nav class="crm-sidebar-nav">
+      <div class="crm-nav-section">OVERVIEW</div>
+      <a class="crm-nav-item active" onclick="showSection('dashboard',this)"><i class="fas fa-chart-pie"></i> Dashboard</a>
+      <a class="crm-nav-item" onclick="showSection('notifications',this)" id="navNotif"><i class="fas fa-bell"></i> Notifications <span class="crm-badge" id="notifBadge" style="display:none">0</span></a>
+      <div class="crm-nav-section">CLIENTS & LEADS</div>
+      <a class="crm-nav-item" onclick="showSection('clients',this)"><i class="fas fa-users"></i> All Clients</a>
+      <a class="crm-nav-item" onclick="showSection('leads',this)"><i class="fas fa-funnel-dollar"></i> Leads</a>
+      <a class="crm-nav-item" onclick="showSection('deposits',this)"><i class="fas fa-coins"></i> Deposits</a>
+      <div class="crm-nav-section">STAFF</div>
+      <a class="crm-nav-item" onclick="showSection('agents',this)"><i class="fas fa-headset"></i> Agents</a>
+      <a class="crm-nav-item" onclick="showSection('managers',this)"><i class="fas fa-user-tie"></i> Managers</a>
+      <a class="crm-nav-item" onclick="showSection('retmanagers',this)"><i class="fas fa-user-shield"></i> Ret. Managers</a>
+      <div class="crm-nav-section">SYSTEM</div>
+      <a class="crm-nav-item" onclick="showSection('analytics',this)"><i class="fas fa-chart-line"></i> Analytics</a>
+      <a class="crm-nav-item" onclick="showSection('audit',this)"><i class="fas fa-history"></i> Audit Log</a>
+      <a class="crm-nav-item" onclick="showSection('settings',this)"><i class="fas fa-cog"></i> Settings</a>
+    </nav>
+    <div class="crm-sidebar-footer">
+      <div class="crm-sidebar-user">
+        <div class="crm-avatar" style="background:linear-gradient(135deg,var(--red),#ff6b35)">A</div>
+        <div class="crm-sidebar-user-info"><div class="crm-sidebar-user-name">Admin</div><div class="crm-sidebar-user-role">Super Admin</div></div>
+      </div>
+      <button class="crm-sidebar-logout" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i></button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="crm-main-wrap">
+    <!-- TOPBAR -->
+    <header class="crm-topbar">
+      <div class="crm-topbar-title" id="topbarTitle">Dashboard</div>
+      <div class="crm-topbar-actions">
+        <div id="topbarDate" style="font-size:12px;color:var(--t2)"></div>
+        <button class="btn btn-primary" onclick="openModal('addStaff')"><i class="fas fa-plus"></i> Add Staff</button>
+      </div>
+    </header>
+
+    <main class="crm-main">
+
+      <!-- ═══════ DASHBOARD ═══════ -->
+      <div class="section active" id="sec-dashboard">
+        <div class="stat-row" id="dashStats"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px">
+          <div class="crm-card">
+            <div class="crm-card-header"><span>Deposit Requests</span><a class="text-link" onclick="showSection('deposits',document.querySelector('[onclick*=deposits]'))">View All</a></div>
+            <div id="dashDeposits"></div>
+          </div>
+          <div class="crm-card">
+            <div class="crm-card-header"><span>Recent Activity</span></div>
+            <div id="dashActivity"></div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px">
+          <div class="crm-card">
+            <div class="crm-card-header"><span>Lead Pipeline</span></div>
+            <div id="dashPipeline"></div>
+          </div>
+          <div class="crm-card">
+            <div class="crm-card-header"><span>Top Agents</span></div>
+            <div id="dashAgents"></div>
+          </div>
+          <div class="crm-card">
+            <div class="crm-card-header"><span>KYC Status</span></div>
+            <div id="dashKYC"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════ NOTIFICATIONS ═══════ -->
+      <div class="section" id="sec-notifications">
+        <div class="crm-card">
+          <div class="crm-card-header">
+            <span>Notifications</span>
+            <button class="btn btn-ghost" onclick="markAllNotifRead()">Mark all read</button>
+          </div>
+          <div id="notifList"></div>
+        </div>
+      </div>
+
+      <!-- ═══════ CLIENTS ═══════ -->
+      <div class="section" id="sec-clients">
+        <div class="action-bar">
+          <input type="text" class="search-inp" id="clientSearch" placeholder="Search by name, email, ID…" oninput="renderClients()">
+          <select class="filter-sel" id="clientStatusFilter" onchange="renderClients()">
+            <option value="">All Statuses</option>
+            <option value="active">Active</option>
+            <option value="dormant">Dormant</option>
+            <option value="blocked">Blocked</option>
+          </select>
+          <select class="filter-sel" id="clientKycFilter" onchange="renderClients()">
+            <option value="">All KYC</option>
+            <option value="approved">KYC Approved</option>
+            <option value="pending">KYC Pending</option>
+            <option value="not_started">Not Started</option>
+          </select>
+          <select class="filter-sel" id="clientAgentFilter" onchange="renderClients()">
+            <option value="">All Agents</option>
+          </select>
+        </div>
+        <div class="crm-card" style="padding:0">
+          <table class="crm-table">
+            <thead><tr><th>Client</th><th>Email</th><th>Balance</th><th>Deposited</th><th>Agent</th><th>KYC</th><th>Status</th><th>Tags</th><th>Actions</th></tr></thead>
+            <tbody id="clientsTbody"></tbody>
+          </table>
+        </div>
+        <div id="clientsPager" style="margin-top:12px;text-align:center"></div>
+      </div>
+
+      <!-- ═══════ LEADS ═══════ -->
+      <div class="section" id="sec-leads">
+        <div class="action-bar">
+          <input type="text" class="search-inp" id="leadSearch" placeholder="Search leads…" oninput="renderLeads()">
+          <select class="filter-sel" id="leadStatusFilter" onchange="renderLeads()">
+            <option value="">All Stages</option>
+            <option value="new">New</option>
+            <option value="contacted">Contacted</option>
+            <option value="qualified">Qualified</option>
+            <option value="interested">Interested</option>
+            <option value="kyc_pending">KYC Pending</option>
+            <option value="ftd">FTD</option>
+            <option value="dormant">Dormant</option>
+            <option value="churned">Churned</option>
+          </select>
+          <select class="filter-sel" id="leadAgentFilter" onchange="renderLeads()">
+            <option value="">All Agents</option>
+          </select>
+          <button class="btn btn-primary" onclick="openModal('addLead')"><i class="fas fa-plus"></i> Add Lead</button>
+        </div>
+        <div class="crm-card" style="padding:0">
+          <table class="crm-table">
+            <thead><tr><th>Lead</th><th>Contact</th><th>Source</th><th>Stage</th><th>Agent</th><th>Created</th><th>Actions</th></tr></thead>
+            <tbody id="leadsTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ═══════ DEPOSITS ═══════ -->
+      <div class="section" id="sec-deposits">
+        <div class="action-bar">
+          <input type="text" class="search-inp" id="depSearch" placeholder="Search deposits…" oninput="renderDeposits()">
+          <select class="filter-sel" id="depStatusFilter" onchange="renderDeposits()">
+            <option value="">All</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+        <div class="crm-card" style="padding:0">
+          <table class="crm-table">
+            <thead><tr><th>Date</th><th>Client</th><th>Amount</th><th>Method</th><th>Status</th><th>Reviewed By</th><th>Actions</th></tr></thead>
+            <tbody id="depTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ═══════ AGENTS ═══════ -->
+      <div class="section" id="sec-agents">
+        <div class="action-bar">
+          <input type="text" class="search-inp" id="agentSearch" placeholder="Search agents…" oninput="renderAgents()">
+          <select class="filter-sel" id="agentMgrFilter" onchange="renderAgents()">
+            <option value="">All Managers</option>
+          </select>
+          <button class="btn btn-primary" onclick="openAddStaff('agent')"><i class="fas fa-plus"></i> Add Agent</button>
+        </div>
+        <div class="crm-card" style="padding:0">
+          <table class="crm-table">
+            <thead><tr><th>Agent</th><th>Username</th><th>Manager</th><th>Clients</th><th>FTDs</th><th>Last Login</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="agentsTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ═══════ MANAGERS ═══════ -->
+      <div class="section" id="sec-managers">
+        <div class="action-bar">
+          <input type="text" class="search-inp" id="mgrSearch" placeholder="Search managers…" oninput="renderManagers()">
+          <button class="btn btn-primary" onclick="openAddStaff('manager')"><i class="fas fa-plus"></i> Add Manager</button>
+        </div>
+        <div class="crm-card" style="padding:0">
+          <table class="crm-table">
+            <thead><tr><th>Manager</th><th>Username</th><th>Agents</th><th>Clients</th><th>Revenue</th><th>Last Login</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="mgrTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ═══════ RET MANAGERS ═══════ -->
+      <div class="section" id="sec-retmanagers">
+        <div class="action-bar">
+          <input type="text" class="search-inp" id="retSearch" placeholder="Search retention managers…" oninput="renderRetManagers()">
+          <button class="btn btn-primary" onclick="openAddStaff('ret_manager')"><i class="fas fa-plus"></i> Add Ret. Manager</button>
+        </div>
+        <div class="crm-card" style="padding:0">
+          <table class="crm-table">
+            <thead><tr><th>Name</th><th>Username</th><th>Assigned Clients</th><th>Calls</th><th>Last Login</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="retTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ═══════ ANALYTICS ═══════ -->
+      <div class="section" id="sec-analytics">
+        <div class="stat-row" id="analyticsStats"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+          <div class="crm-card"><div class="crm-card-header"><span>Monthly Deposits</span></div><div id="analyticsDepChart" class="mini-chart" style="height:140px;padding:0 8px;align-items:flex-end;gap:6px"></div></div>
+          <div class="crm-card"><div class="crm-card-header"><span>Lead Conversion Funnel</span></div><div id="analyticsFunnel"></div></div>
+        </div>
+      </div>
+
+      <!-- ═══════ AUDIT LOG ═══════ -->
+      <div class="section" id="sec-audit">
+        <div class="action-bar">
+          <input type="text" class="search-inp" id="auditSearch" placeholder="Search audit log…" oninput="renderAudit()">
+          <select class="filter-sel" id="auditTypeFilter" onchange="renderAudit()">
+            <option value="">All Actions</option>
+            <option value="deposit">Deposit</option>
+            <option value="balance">Balance Adj.</option>
+            <option value="block">Block/Unblock</option>
+            <option value="assign">Assign</option>
+            <option value="kyc">KYC</option>
+          </select>
+        </div>
+        <div class="crm-card" style="padding:0">
+          <table class="crm-table">
+            <thead><tr><th>Time</th><th>Action</th><th>Details</th><th>Actor</th><th>Client</th></tr></thead>
+            <tbody id="auditTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ═══════ SETTINGS ═══════ -->
+      <div class="section" id="sec-settings">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+          <div class="crm-card">
+            <div class="crm-card-header"><span>Admin Password</span></div>
+            <div class="form-group"><label>Current Password</label><input type="password" id="settOldPw" placeholder="Current password"></div>
+            <div class="form-group"><label>New Password</label><input type="password" id="settNewPw" placeholder="New password (min 8 chars)"></div>
+            <div class="form-group"><label>Confirm New Password</label><input type="password" id="settConfPw" placeholder="Confirm new password"></div>
+            <button class="btn btn-primary" onclick="changeAdminPw()">Update Password</button>
+            <div id="settMsg" style="margin-top:10px;font-size:13px"></div>
+          </div>
+          <div class="crm-card">
+            <div class="crm-card-header"><span>CRM Settings</span></div>
+            <div class="perm-row"><span style="font-size:14px">Dormancy alert (days)</span><input type="number" value="30" style="width:70px;padding:6px 10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:var(--text);font-family:var(--font);"></div>
+            <div class="perm-row"><span style="font-size:14px">Require maker-checker for balance adj.</span><label class="toggle-sw"><input type="checkbox" checked id="makerCheckerToggle"><span class="slider"></span></label></div>
+            <div class="perm-row"><span style="font-size:14px">Auto-notify on FTD</span><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div>
+            <div class="perm-row"><span style="font-size:14px">KYC expiry alerts</span><label class="toggle-sw"><input type="checkbox" checked><span class="slider"></span></label></div>
+            <button class="btn btn-primary" style="margin-top:16px" onclick="toast('Settings saved','success')">Save Settings</button>
+          </div>
+        </div>
+        <div class="crm-card" style="margin-top:20px">
+          <div class="crm-card-header"><span>Danger Zone</span></div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <button class="btn" style="background:rgba(239,83,80,.12);color:var(--dn);border:1px solid rgba(239,83,80,.3)" onclick="if(confirm('Clear all CRM data? This cannot be undone.'))clearCRMData()">Clear All CRM Data</button>
+            <button class="btn btn-ghost" onclick="exportData()"><i class="fas fa-download"></i> Export localStorage Snapshot</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- CLIENT DRAWER -->
+<div class="crm-drawer-overlay" id="drawerOverlay" onclick="closeDrawer()" style="display:none"></div>
+<div class="crm-drawer" id="clientDrawer" style="display:none">
+  <div class="crm-drawer-header">
+    <div>
+      <div class="crm-drawer-title" id="drawerName">—</div>
+      <div class="crm-drawer-sub" id="drawerSub">—</div>
+    </div>
+    <button class="crm-drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="crm-drawer-tabs">
+    <div class="crm-drawer-tab active" onclick="switchDrawerTab('overview',this)">Overview</div>
+    <div class="crm-drawer-tab" onclick="switchDrawerTab('portfolio',this)">Portfolio</div>
+    <div class="crm-drawer-tab" onclick="switchDrawerTab('deposits',this)">Deposits</div>
+    <div class="crm-drawer-tab" onclick="switchDrawerTab('notes',this)">Notes</div>
+    <div class="crm-drawer-tab" onclick="switchDrawerTab('admin',this)">Admin Actions</div>
+  </div>
+  <div class="crm-drawer-body" id="drawerBody"></div>
+</div>
+
+<!-- ADD STAFF MODAL -->
+<div class="crm-modal-overlay" id="modal-addStaff" style="display:none">
+  <div class="crm-modal">
+    <h4 id="addStaffTitle">Add Staff Member</h4>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group"><label>First Name</label><input type="text" id="sf_first" placeholder="First name"></div>
+      <div class="form-group"><label>Last Name</label><input type="text" id="sf_last" placeholder="Last name"></div>
+      <div class="form-group"><label>Username</label><input type="text" id="sf_user" placeholder="username.here"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="sf_email" placeholder="staff@mbctrading.com"></div>
+      <div class="form-group"><label>Role</label>
+        <select class="filter-sel" id="sf_role" style="width:100%">
+          <option value="agent">Agent</option>
+          <option value="manager">Manager</option>
+          <option value="ret_manager">Ret. Manager</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Manager (for agents)</label>
+        <select class="filter-sel" id="sf_mgr" style="width:100%">
+          <option value="">— None —</option>
+        </select>
+      </div>
+      <div class="form-group" style="grid-column:span 2"><label>Password</label><input type="password" id="sf_pw" placeholder="Temporary password"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('addStaff')">Cancel</button>
+      <button class="btn btn-primary" onclick="createStaff()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD LEAD MODAL -->
+<div class="crm-modal-overlay" id="modal-addLead" style="display:none">
+  <div class="crm-modal">
+    <h4>Add New Lead</h4>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="form-group"><label>First Name</label><input type="text" id="ld_first" placeholder="First name"></div>
+      <div class="form-group"><label>Last Name</label><input type="text" id="ld_last" placeholder="Last name"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="ld_email" placeholder="lead@email.com"></div>
+      <div class="form-group"><label>Phone</label><input type="text" id="ld_phone" placeholder="+1 234 567 8900"></div>
+      <div class="form-group"><label>Country</label><input type="text" id="ld_country" placeholder="Country"></div>
+      <div class="form-group"><label>Source</label>
+        <select class="filter-sel" id="ld_source" style="width:100%">
+          <option value="organic">Organic</option>
+          <option value="paid">Paid Ads</option>
+          <option value="referral">Referral</option>
+          <option value="ib">IB</option>
+          <option value="social">Social</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Assign Agent</label>
+        <select class="filter-sel" id="ld_agent" style="width:100%">
+          <option value="">— Unassigned —</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Notes</label><input type="text" id="ld_notes" placeholder="Initial notes…"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('addLead')">Cancel</button>
+      <button class="btn btn-primary" onclick="createLead()">Add Lead</button>
+    </div>
+  </div>
+</div>
+
+<!-- BALANCE ADJUST MODAL -->
+<div class="crm-modal-overlay" id="modal-balance" style="display:none">
+  <div class="crm-modal">
+    <h4>Adjust Balance</h4>
+    <div class="form-group"><label>Client</label><div id="balClientName" style="padding:9px 0;font-weight:600"></div></div>
+    <div class="form-group"><label>Amount (USD)</label><input type="number" id="balAmount" placeholder="0.00" min="0.01" step="0.01"></div>
+    <div class="form-group"><label>Type</label>
+      <select class="filter-sel" id="balType" style="width:100%">
+        <option value="credit">Credit (Add funds)</option>
+        <option value="debit">Debit (Remove funds)</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Reason</label><input type="text" id="balReason" placeholder="Reason for adjustment…"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('balance')">Cancel</button>
+      <button class="btn btn-primary" onclick="executeBalanceAdj()">Apply Adjustment</button>
+    </div>
+  </div>
+</div>
+
+<!-- ASSIGN MODAL -->
+<div class="crm-modal-overlay" id="modal-assign" style="display:none">
+  <div class="crm-modal">
+    <h4>Reassign Client</h4>
+    <div class="form-group"><label>Client</label><div id="assignClientName" style="padding:9px 0;font-weight:600"></div></div>
+    <div class="form-group"><label>Assign to Agent</label>
+      <select class="filter-sel" id="assignAgentSel" style="width:100%"></select>
+    </div>
+    <div class="form-group"><label>Assign to Manager</label>
+      <select class="filter-sel" id="assignMgrSel" style="width:100%"></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('assign')">Cancel</button>
+      <button class="btn btn-primary" onclick="executeAssign()">Reassign</button>
+    </div>
+  </div>
+</div>
+
+<!-- KYC MODAL -->
+<div class="crm-modal-overlay" id="modal-kyc" style="display:none">
+  <div class="crm-modal">
+    <h4>Update KYC Status</h4>
+    <div class="form-group"><label>Client</label><div id="kycClientName" style="padding:9px 0;font-weight:600"></div></div>
+    <div class="form-group"><label>KYC Status</label>
+      <select class="filter-sel" id="kycStatusSel" style="width:100%">
+        <option value="not_started">Not Started</option>
+        <option value="pending">Pending Review</option>
+        <option value="pending_additional">Pending Additional Docs</option>
+        <option value="approved">Approved</option>
+        <option value="restricted">Restricted</option>
+        <option value="expired">Expired</option>
+        <option value="closed">Closed</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Notes</label><input type="text" id="kycNote" placeholder="KYC reviewer notes…"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('kyc')">Cancel</button>
+      <button class="btn btn-primary" onclick="executeKYC()">Update KYC</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="crm-toast-wrap" id="toastWrap"></div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script>
+// ─── AUTH GATE ───
+var currentStaff = null;
+(function(){
+  var sess = null;
+  try { sess = JSON.parse(localStorage.getItem('mbc_crm_session') || 'null'); } catch(e){}
+  if (!sess || sess.role !== 'admin' || (Date.now() - sess.time > 8*3600*1000)) { window.location.href='index.html'; return; }
+  currentStaff = { id:'admin', username:'admin', role:'admin', firstName:'Admin', lastName:'' };
+  document.getElementById('topbarDate').textContent = new Date().toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+})();
+
+// ─── HELPERS ───
+function ls(k,v){ if(v!==undefined){ localStorage.setItem(k,JSON.stringify(v)); return v; } try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ return null; } }
+function getUsers(){ return ls('mbc_users') || []; }
+function getStaff(){ return ls('mbc_crm_staff') || []; }
+function getLeads(){ return ls('mbc_crm_leads') || []; }
+function getDeposits(){ return ls('mbc_deposit_requests') || []; }
+function getPortfolio(uid){ return ls('mbc_portfolio_'+uid); }
+function getAudit(){ return ls('mbc_crm_audit_log') || []; }
+function getNotifications(){ return ls('mbc_crm_notifications') || []; }
+function fmtMoney(n){ if(!n) return '$0'; return '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtDate(d){ if(!d) return '—'; return new Date(d).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
+function fmtTime(d){ if(!d) return '—'; const t=new Date(d); return t.toLocaleDateString('en-GB',{day:'2-digit',month:'short'})+' '+t.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
+function ago(d){ if(!d) return '—'; const s=Math.floor((Date.now()-new Date(d).getTime())/1000); if(s<60) return s+'s ago'; if(s<3600) return Math.floor(s/60)+'m ago'; if(s<86400) return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago'; }
+function staffName(id){ if(!id) return '—'; const s=getStaff().find(x=>x.id===id); return s ? s.firstName+' '+s.lastName : '—'; }
+function kycBadge(k){ const m={approved:'kyc-approved',pending:'kyc-pending',pending_additional:'kyc-pending',not_started:'kyc-not-started',restricted:'kyc-restricted',expired:'kyc-restricted',closed:'kyc-restricted'}; const t=k||'not_started'; return `<span class="kyc-badge ${m[t]||'kyc-not-started'}">${(t||'—').replace(/_/g,' ')}</span>`; }
+function statusBadge(s){ const m={active:'badge-active',blocked:'badge-blocked',dormant:'badge-dormant',inactive:'badge-inactive'}; return `<span class="badge ${m[s]||'badge-inactive'}">${s||'—'}</span>`; }
+function lpBadge(s){ return `<span class="lp-stage lp-${s||'new'}">${(s||'new').replace(/_/g,' ')}</span>`; }
+function escHTML(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+
+// ─── AUDIT LOG ───
+function logAudit(action,details,clientId){
+  const log=getAudit();
+  log.unshift({id:'aud_'+Date.now(),action,details,clientId:clientId||null,actor:'admin',actorName:'Admin',ts:new Date().toISOString()});
+  ls('mbc_crm_audit_log',log.slice(0,500));
+}
+
+// ─── BROADCAST ───
+function broadcastCRMAction(action,payload){
+  const bc=new BroadcastChannel('mbc-crm-sync');
+  const nonce='act_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+  const cmd={action,payload,ts:Date.now(),nonce,adminId:'admin',applied:false};
+  localStorage.setItem('mbc_crm_admin_action',JSON.stringify(cmd));
+  bc.postMessage(cmd); bc.close();
+}
+
+// ─── TOAST ───
+function toast(msg,type='info'){
+  const wrap=document.getElementById('toastWrap');
+  const el=document.createElement('div');
+  el.className='crm-toast'+(type==='success'?' crm-toast-success':type==='error'?' crm-toast-error':'');
+  el.textContent=msg; wrap.appendChild(el);
+  setTimeout(()=>el.classList.add('show'),10);
+  setTimeout(()=>{ el.classList.remove('show'); setTimeout(()=>el.remove(),400); },3500);
+}
+
+// ─── NAVIGATION ───
+function showSection(id,el){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  document.querySelectorAll('.crm-nav-item').forEach(i=>i.classList.remove('active'));
+  if(el) el.classList.add('active');
+  document.getElementById('topbarTitle').textContent = el ? el.textContent.trim() : id;
+  const renders = {dashboard:renderDashboard,clients:renderClients,leads:renderLeads,deposits:renderDeposits,agents:renderAgents,managers:renderManagers,retmanagers:renderRetManagers,analytics:renderAnalytics,audit:renderAudit,notifications:renderNotifications};
+  if(renders[id]) renders[id]();
+}
+
+// ─── DASHBOARD ───
+function renderDashboard(){
+  const users=getUsers(); const staff=getStaff(); const leads=getLeads(); const deps=getDeposits();
+  let totalBalance=0, totalDeposited=0, ftdCount=0;
+  users.forEach(u=>{ const p=getPortfolio(u.id); if(p) totalBalance+=(p.balance||0); totalDeposited+=(u.totalDeposited||0); if(u.ftdDate) ftdCount++; });
+  const agents=staff.filter(s=>s.role==='agent'&&s.status==='active');
+  const pendingDeps=deps.filter(d=>d.status==='pending');
+  const html=s=>`<div class="crm-stat"><div class="crm-stat-top"></div><div class="crm-stat-label">${s.l}</div><div class="crm-stat-val">${s.v}</div><div class="crm-stat-change ${s.up?'up':'dn'}">${s.c}</div></div>`;
+  document.getElementById('dashStats').innerHTML=[
+    {l:'Total AUM',v:fmtMoney(totalBalance),c:'Live balance',up:true},
+    {l:'Total Deposited',v:fmtMoney(totalDeposited),c:'All time',up:true},
+    {l:'Registered Clients',v:users.length,c:ftdCount+' with FTD',up:true},
+    {l:'Pending Deposits',v:pendingDeps.length,c:pendingDeps.length>0?'Needs review':'All clear',up:pendingDeps.length===0}
+  ].map(html).join('');
+
+  // Pending deposits
+  const dHtml=pendingDeps.slice(0,5).map(d=>{
+    const u=users.find(x=>x.id===d.userId)||{};
+    return `<div class="timeline-item">
+      <div class="timeline-dot gold"></div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:600">${escHTML(u.firstName||'')} ${escHTML(u.lastName||'')} — ${fmtMoney(d.amount)}</div>
+      <div style="font-size:11px;color:var(--t2)">${ago(d.requestDate||d.createdAt)}</div></div>
+      <div style="display:flex;gap:6px">
+        <button class="table-action" onclick="approveDeposit('${d.id}')">Approve</button>
+        <button class="table-action red" onclick="rejectDeposit('${d.id}')">Reject</button>
+      </div></div>`;
+  }).join('') || '<div class="empty-state" style="padding:20px"><i class="fas fa-check-circle"></i>No pending deposits</div>';
+  document.getElementById('dashDeposits').innerHTML=dHtml;
+
+  // Recent activity
+  const audit=getAudit().slice(0,8);
+  const aColors={deposit:'green',balance:'blue',block:'',assign:'gold',kyc:'blue'};
+  document.getElementById('dashActivity').innerHTML=audit.map(a=>
+    `<div class="timeline-item"><div class="timeline-dot ${aColors[a.action]||''}"></div><div><div style="font-size:13px">${escHTML(a.details)}</div><div style="font-size:11px;color:var(--t2)">${ago(a.ts)} · ${escHTML(a.actorName)}</div></div></div>`
+  ).join('') || '<div style="padding:20px;text-align:center;color:var(--t2);font-size:13px">No recent activity</div>';
+
+  // Pipeline
+  const stages=['new','contacted','qualified','interested','kyc_pending','ftd','active_trader','dormant','churned'];
+  document.getElementById('dashPipeline').innerHTML=stages.map(s=>{
+    const cnt=leads.filter(l=>l.status===s).length;
+    return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="font-size:12px">${lpBadge(s)}</span><span style="font-size:12px;font-weight:600">${cnt}</span></div>`;
+  }).join('');
+
+  // Top agents
+  document.getElementById('dashAgents').innerHTML=agents.slice(0,5).map(a=>{
+    const clientCount=users.filter(u=>u.assignedAgentId===a.id).length;
+    const ftds=users.filter(u=>u.assignedAgentId===a.id&&u.ftdDate).length;
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+      <div><div style="font-size:13px;font-weight:600">${escHTML(a.firstName)} ${escHTML(a.lastName)}</div><div style="font-size:11px;color:var(--t2)">${clientCount} clients</div></div>
+      <div style="text-align:right"><div style="font-size:13px;font-weight:700;color:var(--up)">${ftds} FTD</div></div></div>`;
+  }).join('') || '<div style="padding:16px;text-align:center;color:var(--t2);font-size:13px">No agents yet</div>';
+
+  // KYC
+  const kycStatus=['approved','pending','not_started','restricted'];
+  document.getElementById('dashKYC').innerHTML=kycStatus.map(k=>{
+    const cnt=users.filter(u=>(u.kycStatus||'not_started')===k).length;
+    return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)">${kycBadge(k)}<span style="font-size:12px;font-weight:600">${cnt}</span></div>`;
+  }).join('');
+}
+
+// ─── NOTIFICATIONS ───
+function renderNotifications(){
+  const notifs=getNotifications();
+  const unread=notifs.filter(n=>!n.read).length;
+  const badge=document.getElementById('notifBadge');
+  badge.textContent=unread; badge.style.display=unread>0?'inline':'none';
+  document.getElementById('notifList').innerHTML=notifs.length>0?notifs.map((n,i)=>
+    `<div class="crm-notification-item ${n.read?'':'unread'}" onclick="readNotif(${i})">
+      <span class="notif-dot" style="${n.read?'opacity:.3':''}"></span>
+      <div><div style="font-size:13px;font-weight:${n.read?'400':'600'}">${escHTML(n.title)}</div>
+      <div style="font-size:12px;color:var(--t2)">${escHTML(n.body||'')} · ${ago(n.ts)}</div></div>
+    </div>`).join('') : '<div class="empty-state"><i class="fas fa-bell"></i>No notifications</div>';
+}
+function readNotif(i){ const n=getNotifications(); if(n[i]) n[i].read=true; ls('mbc_crm_notifications',n); renderNotifications(); }
+function markAllNotifRead(){ const n=getNotifications().map(x=>({...x,read:true})); ls('mbc_crm_notifications',n); renderNotifications(); toast('All notifications marked read','success'); }
+
+// ─── CLIENTS ───
+var clientPage=0, clientPageSize=20;
+function renderClients(){
+  const users=getUsers(); const staff=getStaff();
+  const q=(document.getElementById('clientSearch').value||'').toLowerCase();
+  const statusF=document.getElementById('clientStatusFilter').value;
+  const kycF=document.getElementById('clientKycFilter').value;
+  const agentF=document.getElementById('clientAgentFilter').value;
+  // Populate agent filter
+  const agSel=document.getElementById('clientAgentFilter');
+  if(agSel.options.length<=1){ staff.filter(s=>s.role==='agent').forEach(a=>{ const o=document.createElement('option'); o.value=a.id; o.textContent=a.firstName+' '+a.lastName; agSel.appendChild(o); }); }
+  const filtered=users.filter(u=>{
+    const name=((u.firstName||'')+' '+(u.lastName||'')).toLowerCase();
+    const qOk=!q||name.includes(q)||(u.email||'').toLowerCase().includes(q)||(u.id||'').toLowerCase().includes(q);
+    const stOk=!statusF||(u.crmStatus||'active')===statusF;
+    const kOk=!kycF||(u.kycStatus||'not_started')===kycF;
+    const agOk=!agentF||(u.assignedAgentId||'')===agentF;
+    return qOk&&stOk&&kOk&&agOk;
+  });
+  const start=clientPage*clientPageSize; const page=filtered.slice(start,start+clientPageSize);
+  const tbody=document.getElementById('clientsTbody');
+  if(!page.length){ tbody.innerHTML=`<tr><td colspan="9"><div class="empty-state"><i class="fas fa-users"></i>No clients found</div></td></tr>`; return; }
+  tbody.innerHTML=page.map(u=>{
+    const p=getPortfolio(u.id)||{balance:0};
+    const agName=staffName(u.assignedAgentId);
+    const tags=(u.tags||[]).slice(0,2).map(t=>`<span class="tag-pill ${tagClass(t)}">${t}</span>`).join('');
+    const score=clientScore(u,p);
+    return `<tr class="client-row" onclick="openClientDrawer('${u.id}')">
+      <td><div style="display:flex;align-items:center;gap:10px"><div class="crm-avatar" style="width:30px;height:30px;font-size:12px">${(u.firstName||'?')[0]}</div><div><div style="font-weight:600;font-size:13px">${escHTML(u.firstName||'')} ${escHTML(u.lastName||'')}</div><div style="font-size:11px;color:var(--t2)">${escHTML(u.id||'')}</div></div></div></td>
+      <td style="font-size:12px">${escHTML(u.email||'—')}</td>
+      <td style="font-weight:600">${fmtMoney(p.balance)}</td>
+      <td>${fmtMoney(u.totalDeposited)}</td>
+      <td style="font-size:12px">${escHTML(agName)}</td>
+      <td>${kycBadge(u.kycStatus)}</td>
+      <td>${statusBadge(u.crmStatus||'active')}</td>
+      <td>${tags}</td>
+      <td onclick="event.stopPropagation()">
+        <button class="table-action" onclick="openBalanceModal('${u.id}')">Adj.</button>
+        <button class="table-action" onclick="openAssignModal('${u.id}')">Assign</button>
+        <button class="table-action ${(u.crmStatus==='blocked')?'':'red'}" onclick="toggleBlock('${u.id}')">${u.crmStatus==='blocked'?'Unblock':'Block'}</button>
+      </td></tr>`;
+  }).join('');
+  const total=Math.ceil(filtered.length/clientPageSize);
+  document.getElementById('clientsPager').innerHTML=total>1?`<button class="btn btn-ghost" onclick="clientPage=Math.max(0,clientPage-1);renderClients()" ${clientPage===0?'disabled':''}>← Prev</button> <span style="font-size:12px;color:var(--t2);margin:0 12px">Page ${clientPage+1}/${total}</span> <button class="btn btn-ghost" onclick="clientPage=Math.min(${total-1},clientPage+1);renderClients()" ${clientPage>=total-1?'disabled':''}>Next →</button>`:'';
+}
+function tagClass(t){ const m={'VIP':'tag-vip','At Risk':'tag-at-risk','Dormant':'tag-dormant','KYC Pending':'tag-kyc','First Deposit':'tag-ftd','IB Referral':'tag-ib','Do Not Disturb':'tag-dnd'}; return m[t]||'tag-dormant'; }
+function clientScore(u,p){ const b=p.balance||0; const d=u.totalDeposited||0; if(b>50000||d>100000) return {cls:'score-high',val:'A'}; if(b>10000||d>20000) return {cls:'score-mid',val:'B'}; return {cls:'score-low',val:'C'}; }
+
+// ─── CLIENT DRAWER ───
+var currentDrawerClient=null;
+function openClientDrawer(uid){
+  const users=getUsers(); const u=users.find(x=>x.id===uid);
+  if(!u){ toast('Client not found','error'); return; }
+  currentDrawerClient=uid;
+  document.getElementById('drawerName').textContent=(u.firstName||'')+' '+(u.lastName||'');
+  document.getElementById('drawerSub').textContent=u.email||uid;
+  document.getElementById('clientDrawer').style.display='block';
+  document.getElementById('drawerOverlay').style.display='block';
+  switchDrawerTab('overview',document.querySelector('.crm-drawer-tab'));
+}
+function closeDrawer(){ document.getElementById('clientDrawer').style.display='none'; document.getElementById('drawerOverlay').style.display='none'; currentDrawerClient=null; }
+function switchDrawerTab(tab,el){
+  document.querySelectorAll('.crm-drawer-tab').forEach(t=>t.classList.remove('active'));
+  if(el) el.classList.add('active');
+  renderDrawerTab(tab);
+}
+function renderDrawerTab(tab){
+  if(!currentDrawerClient){ return; }
+  const users=getUsers(); const u=users.find(x=>x.id===currentDrawerClient)||{};
+  const p=getPortfolio(currentDrawerClient)||{balance:0,positions:[],orders:[],history:[]};
+  const staff=getStaff();
+  let html='';
+  if(tab==='overview'){
+    const tags=(u.tags||[]).map(t=>`<span class="tag-pill ${tagClass(t)}">${t}</span>`).join(' ')||'<span style="color:var(--t2);font-size:12px">No tags</span>';
+    html=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      ${infoRow('Balance',fmtMoney(p.balance))}
+      ${infoRow('Total Deposited',fmtMoney(u.totalDeposited))}
+      ${infoRow('KYC Status',kycBadge(u.kycStatus))}
+      ${infoRow('Status',statusBadge(u.crmStatus||'active'))}
+      ${infoRow('Agent',escHTML(staffName(u.assignedAgentId)))}
+      ${infoRow('Manager',escHTML(staffName(u.assignedManagerId)))}
+      ${infoRow('FTD Date',fmtDate(u.ftdDate))}
+      ${infoRow('FTD Amount',fmtMoney(u.ftdAmount))}
+      ${infoRow('Registered',fmtDate(u.registeredAt||u.created))}
+      ${infoRow('Last Activity',ago(u.lastActivity))}
+    </div>
+    <div style="margin-bottom:12px"><div style="font-size:11px;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Tags</div>${tags}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">
+      <button class="btn btn-primary" onclick="openBalanceModal('${u.id}')">Adjust Balance</button>
+      <button class="btn btn-ghost" onclick="openAssignModal('${u.id}')">Reassign</button>
+      <button class="btn btn-ghost" onclick="openKYCModal('${u.id}')">Update KYC</button>
+      <button class="btn ${u.crmStatus==='blocked'?'btn-primary':'btn-ghost'}" onclick="toggleBlock('${u.id}');closeDrawer()">${u.crmStatus==='blocked'?'Unblock Client':'Block Client'}</button>
+    </div>`;
+  } else if(tab==='portfolio'){
+    const positions=p.positions||[];
+    const history=(p.history||[]).slice(0,10);
+    html=`<div style="margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">Open Positions (${positions.length})</div>
+      ${positions.length?`<table class="crm-table"><thead><tr><th>Symbol</th><th>Side</th><th>Qty</th><th>Entry</th><th>P&amp;L</th><th>Action</th></tr></thead><tbody>${positions.map(pos=>`<tr><td style="font-weight:700">${escHTML(pos.sym||pos.symbol||'')}</td><td>${pos.side||''}</td><td>${pos.qty||0}</td><td>${pos.entry||pos.fillPrice||0}</td><td style="color:${(pos.pnl||0)>=0?'var(--up)':'var(--dn)'}">${(pos.pnl||0).toFixed(2)}</td><td><button class="table-action red" onclick="forceClosePosition('${u.id}','${pos.id||pos.sym}')">Close</button></td></tr>`).join('')}</tbody></table>`:'<div style="color:var(--t2);font-size:13px;padding:8px 0">No open positions</div>'}
+    </div>
+    <div>
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">Recent History</div>
+      ${history.map(h=>`<div class="timeline-item"><div class="timeline-dot ${h.side==='buy'||h.type==='deposit'||h.side==='credit'?'green':''}"></div><div style="flex:1"><div style="font-size:13px">${escHTML(h.label||h.type||'')} ${h.sym||''} — ${fmtMoney(h.amount)}</div><div style="font-size:11px;color:var(--t2)">${fmtTime(h.timestamp||h.time)}</div></div></div>`).join('')||'<div style="color:var(--t2);font-size:13px">No history</div>'}
+    </div>`;
+  } else if(tab==='deposits'){
+    const deps=getDeposits().filter(d=>d.userId===currentDrawerClient);
+    html=deps.length?`<table class="crm-table"><thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Status</th></tr></thead><tbody>${deps.map(d=>`<tr><td>${fmtDate(d.requestDate||d.createdAt)}</td><td style="font-weight:600">${fmtMoney(d.amount)}</td><td>${escHTML(d.method||'—')}</td><td>${statusBadge(d.status)}</td></tr>`).join('')}</tbody></table>`:'<div class="empty-state"><i class="fas fa-coins"></i>No deposits yet</div>';
+  } else if(tab==='notes'){
+    const notes=(ls('mbc_crm_notes')||[]).filter(n=>n.clientId===currentDrawerClient);
+    html=`<div class="form-group"><label>Add Note</label><textarea id="drawerNoteInput" style="width:100%;min-height:80px;padding:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;resize:vertical" placeholder="Enter note…"></textarea></div>
+    <button class="btn btn-primary" onclick="addClientNote('${u.id}')">Save Note</button>
+    <div style="margin-top:16px">${notes.map(n=>`<div class="timeline-item"><div class="timeline-dot blue"></div><div><div style="font-size:13px">${escHTML(n.content)}</div><div style="font-size:11px;color:var(--t2)">${ago(n.createdAt)} · ${escHTML(n.authorName||'—')}</div></div></div>`).join('')||'<div style="color:var(--t2);font-size:13px;margin-top:8px">No notes yet</div>'}</div>`;
+  } else if(tab==='admin'){
+    html=`<div style="display:flex;flex-direction:column;gap:12px">
+      <div class="crm-card" style="padding:16px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px">Balance Adjustment</div>
+        <button class="btn btn-primary" onclick="openBalanceModal('${u.id}')">Open Balance Tool</button>
+      </div>
+      <div class="crm-card" style="padding:16px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px">KYC Management</div>
+        <button class="btn btn-ghost" onclick="openKYCModal('${u.id}')">Update KYC Status</button>
+      </div>
+      <div class="crm-card" style="padding:16px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px">Account Control</div>
+        <div style="display:flex;gap:10px">
+          <button class="btn ${u.crmStatus==='blocked'?'btn-primary':'btn-ghost'}" onclick="toggleBlock('${u.id}');closeDrawer()">${u.crmStatus==='blocked'?'Unblock Client':'Block Client'}</button>
+        </div>
+      </div>
+      <div class="crm-card" style="padding:16px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px">Tag Management</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">${['VIP','At Risk','Dormant','KYC Pending','High Potential','First Deposit','No Second Deposit','Do Not Disturb','IB Referral','Toxic','Reactivated'].map(t=>`<span class="tag-pill ${tagClass(t)}" style="cursor:pointer;${(u.tags||[]).includes(t)?'outline:1px solid rgba(255,255,255,.3)':''}" onclick="toggleTag('${u.id}','${t}')">${t}</span>`).join('')}</div>
+      </div>
+    </div>`;
+  }
+  document.getElementById('drawerBody').innerHTML=html;
+}
+function infoRow(label,val){ return `<div><div style="font-size:11px;color:var(--t2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">${label}</div><div style="font-size:13px;font-weight:600">${val}</div></div>`; }
+
+function addClientNote(uid){
+  const content=document.getElementById('drawerNoteInput').value.trim();
+  if(!content){ toast('Enter note content','error'); return; }
+  const notes=ls('mbc_crm_notes')||[];
+  notes.unshift({id:'note_'+Date.now(),clientId:uid,authorId:'admin',authorName:'Admin',content,type:'note',createdAt:new Date().toISOString()});
+  ls('mbc_crm_notes',notes);
+  logAudit('note','Note added for client '+uid,uid);
+  toast('Note saved','success');
+  renderDrawerTab('notes');
+}
+
+// ─── LEADS ───
+function renderLeads(){
+  const leads=getLeads(); const staff=getStaff();
+  const q=(document.getElementById('leadSearch').value||'').toLowerCase();
+  const stF=document.getElementById('leadStatusFilter').value;
+  const agF=document.getElementById('leadAgentFilter').value;
+  const agSel=document.getElementById('leadAgentFilter');
+  if(agSel.options.length<=1){ staff.filter(s=>s.role==='agent').forEach(a=>{ const o=document.createElement('option'); o.value=a.id; o.textContent=a.firstName+' '+a.lastName; agSel.appendChild(o); }); }
+  const filtered=leads.filter(l=>{
+    const name=((l.firstName||'')+' '+(l.lastName||'')).toLowerCase();
+    const qOk=!q||name.includes(q)||(l.email||'').toLowerCase().includes(q);
+    const stOk=!stF||l.status===stF;
+    const agOk=!agF||l.assignedAgentId===agF;
+    return qOk&&stOk&&agOk;
+  });
+  const tbody=document.getElementById('leadsTbody');
+  tbody.innerHTML=filtered.map(l=>`<tr>
+    <td><div style="font-weight:600;font-size:13px">${escHTML(l.firstName||'')} ${escHTML(l.lastName||'')}</div><div style="font-size:11px;color:var(--t2)">${escHTML(l.country||'—')}</div></td>
+    <td style="font-size:12px">${escHTML(l.email||'—')}<br><span style="color:var(--t2)">${escHTML(l.phone||'')}</span></td>
+    <td><span class="badge badge-active" style="font-size:11px">${escHTML(l.source||'—')}</span></td>
+    <td>${lpBadge(l.status)}</td>
+    <td style="font-size:12px">${escHTML(staffName(l.assignedAgentId))}</td>
+    <td style="font-size:12px">${fmtDate(l.createdAt)}</td>
+    <td>
+      <button class="table-action" onclick="advanceLead('${l.id}')">Advance</button>
+      <button class="table-action" onclick="openAssignLead('${l.id}')">Assign</button>
+      <button class="table-action red" onclick="deleteLead('${l.id}')">Del</button>
+    </td></tr>`).join('') || `<tr><td colspan="7"><div class="empty-state"><i class="fas fa-funnel-dollar"></i>No leads found</div></td></tr>`;
+}
+function advanceLead(id){
+  const pipeline=['new','contacted','qualified','interested','kyc_pending','kyc_approved','ftd','active_trader','dormant','churned'];
+  const leads=getLeads(); const idx=leads.findIndex(l=>l.id===id); if(idx<0) return;
+  const ci=pipeline.indexOf(leads[idx].status); if(ci<0||ci>=pipeline.length-1) return;
+  leads[idx].status=pipeline[ci+1]; leads[idx].updatedAt=new Date().toISOString();
+  ls('mbc_crm_leads',leads); logAudit('assign','Lead advanced to '+leads[idx].status,null);
+  renderLeads(); toast('Lead advanced to '+leads[idx].status,'success');
+}
+function deleteLead(id){ if(!confirm('Delete this lead?')) return; ls('mbc_crm_leads',(getLeads()).filter(l=>l.id!==id)); renderLeads(); toast('Lead deleted'); }
+function openAssignLead(id){ /* simplified assign */ const agents=getStaff().filter(s=>s.role==='agent'); const sel=prompt('Assign to agent (enter agent ID):\n'+agents.map(a=>a.id+': '+a.firstName+' '+a.lastName).join('\n')); if(!sel) return; const leads=getLeads(); const idx=leads.findIndex(l=>l.id===id); if(idx<0) return; leads[idx].assignedAgentId=sel; ls('mbc_crm_leads',leads); renderLeads(); toast('Lead assigned'); }
+
+// ─── DEPOSITS ───
+function renderDeposits(){
+  const deps=getDeposits(); const users=getUsers();
+  const q=(document.getElementById('depSearch').value||'').toLowerCase();
+  const stF=document.getElementById('depStatusFilter').value;
+  const filtered=deps.filter(d=>{ const u=users.find(x=>x.id===d.userId)||{}; const name=((u.firstName||'')+' '+(u.lastName||'')).toLowerCase(); return (!q||name.includes(q)||(d.id||'').toLowerCase().includes(q))&&(!stF||d.status===stF); });
+  const tbody=document.getElementById('depTbody');
+  tbody.innerHTML=filtered.map(d=>{ const u=users.find(x=>x.id===d.userId)||{}; return `<tr class="deposit-row-${d.status}">
+    <td style="font-size:12px">${fmtTime(d.requestDate||d.createdAt)}</td>
+    <td><div style="font-weight:600;font-size:13px">${escHTML(u.firstName||'Unknown')} ${escHTML(u.lastName||'')}</div><div style="font-size:11px;color:var(--t2)">${escHTML(u.id||'—')}</div></td>
+    <td style="font-weight:700;font-size:14px">${fmtMoney(d.amount)}</td>
+    <td style="font-size:12px">${escHTML(d.method||'—')}</td>
+    <td>${statusBadge(d.status)}</td>
+    <td style="font-size:12px">${escHTML(d.reviewedBy||'—')}</td>
+    <td>${d.status==='pending'?`<button class="table-action" onclick="approveDeposit('${d.id}')">Approve</button><button class="table-action red" onclick="rejectDeposit('${d.id}')">Reject</button>`:'—'}</td>
+  </tr>`; }).join('') || `<tr><td colspan="7"><div class="empty-state"><i class="fas fa-coins"></i>No deposits</div></td></tr>`;
+}
+function approveDeposit(id){
+  const deps=getDeposits(); const users=getUsers();
+  const idx=deps.findIndex(d=>d.id===id); if(idx<0) return;
+  const d=deps[idx]; const u=users.find(x=>x.id===d.userId);
+  if(!u){ toast('User not found','error'); return; }
+  deps[idx].status='approved'; deps[idx].reviewedBy='admin'; deps[idx].reviewedAt=new Date().toISOString();
+  ls('mbc_deposit_requests',deps);
+  // Credit portfolio
+  const p=getPortfolio(u.id)||{balance:0,startBalance:0,positions:[],orders:[],history:[]};
+  p.balance=(p.balance||0)+Number(d.amount);
+  if(p.cash!==undefined) p.cash=p.balance;
+  p.history.unshift({type:'deposit',label:'DEPOSIT',sym:'USD',amount:Number(d.amount),fillPrice:Number(d.amount),qty:1,side:'credit',pnl:null,note:'Approved by admin',timestamp:new Date().toISOString(),time:Date.now()});
+  ls('mbc_portfolio_'+u.id,p);
+  // FTD check
+  const uidx=users.findIndex(x=>x.id===u.id);
+  users[uidx].totalDeposited=(users[uidx].totalDeposited||0)+Number(d.amount);
+  if(!users[uidx].ftdDate){ users[uidx].ftdDate=new Date().toISOString(); users[uidx].ftdAmount=Number(d.amount); pushNotification('FTD Alert',u.firstName+' '+u.lastName+' made first deposit of '+fmtMoney(d.amount),'ftd'); }
+  ls('mbc_users',users);
+  broadcastCRMAction('deposit_approved',{userId:u.id,amount:d.amount,depositId:id});
+  logAudit('deposit','Deposit approved: '+fmtMoney(d.amount)+' for '+(u.firstName||'')+' '+(u.lastName||''),u.id);
+  toast('Deposit approved — '+fmtMoney(d.amount),'success');
+  renderDeposits(); if(document.getElementById('sec-dashboard').classList.contains('active')) renderDashboard();
+}
+function rejectDeposit(id){
+  if(!confirm('Reject this deposit?')) return;
+  const deps=getDeposits(); const idx=deps.findIndex(d=>d.id===id); if(idx<0) return;
+  deps[idx].status='rejected'; deps[idx].reviewedBy='admin'; deps[idx].reviewedAt=new Date().toISOString();
+  ls('mbc_deposit_requests',deps);
+  logAudit('deposit','Deposit rejected: '+id,null);
+  broadcastCRMAction('deposit_rejected',{depositId:id});
+  toast('Deposit rejected'); renderDeposits();
+}
+
+// ─── AGENTS ───
+function renderAgents(){
+  const staff=getStaff(); const users=getUsers();
+  const q=(document.getElementById('agentSearch').value||'').toLowerCase();
+  const mgrF=document.getElementById('agentMgrFilter').value;
+  const mgrs=staff.filter(s=>s.role==='manager');
+  const mgrSel=document.getElementById('agentMgrFilter');
+  if(mgrSel.options.length<=1){ mgrs.forEach(m=>{ const o=document.createElement('option'); o.value=m.id; o.textContent=m.firstName+' '+m.lastName; mgrSel.appendChild(o); }); }
+  const agents=staff.filter(s=>s.role==='agent').filter(a=>{ return (!q||(a.firstName+' '+a.lastName).toLowerCase().includes(q)||(a.username||'').toLowerCase().includes(q))&&(!mgrF||a.managerId===mgrF); });
+  const tbody=document.getElementById('agentsTbody');
+  tbody.innerHTML=agents.map(a=>{
+    const clientCount=users.filter(u=>u.assignedAgentId===a.id).length;
+    const ftds=users.filter(u=>u.assignedAgentId===a.id&&u.ftdDate).length;
+    return `<tr>
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="crm-avatar" style="width:30px;height:30px;font-size:11px">${(a.firstName||'?')[0]}</div><div><div style="font-weight:600">${escHTML(a.firstName)} ${escHTML(a.lastName)}</div><div style="font-size:11px;color:var(--t2)">${escHTML(a.email||'')}</div></div></div></td>
+      <td style="font-size:12px;font-family:var(--font-data)">${escHTML(a.username)}</td>
+      <td style="font-size:12px">${escHTML(staffName(a.managerId))}</td>
+      <td style="font-weight:700">${clientCount}</td>
+      <td style="color:var(--up);font-weight:700">${ftds}</td>
+      <td style="font-size:12px">${a.lastLogin?ago(a.lastLogin):'Never'}</td>
+      <td>${statusBadge(a.status)}</td>
+      <td>
+        <button class="table-action" onclick="openEditStaff('${a.id}')">Edit</button>
+        <button class="table-action ${a.status==='active'?'red':''}" onclick="toggleStaffStatus('${a.id}')">${a.status==='active'?'Disable':'Enable'}</button>
+        <button class="table-action red" onclick="deleteStaff('${a.id}')">Del</button>
+      </td></tr>`;
+  }).join('') || `<tr><td colspan="8"><div class="empty-state"><i class="fas fa-headset"></i>No agents found</div></td></tr>`;
+}
+
+// ─── MANAGERS ───
+function renderManagers(){
+  const staff=getStaff(); const users=getUsers();
+  const q=(document.getElementById('mgrSearch').value||'').toLowerCase();
+  const mgrs=staff.filter(s=>s.role==='manager').filter(m=>!q||(m.firstName+' '+m.lastName).toLowerCase().includes(q));
+  const tbody=document.getElementById('mgrTbody');
+  tbody.innerHTML=mgrs.map(m=>{
+    const agentCount=staff.filter(s=>s.role==='agent'&&s.managerId===m.id).length;
+    const myAgents=staff.filter(s=>s.role==='agent'&&s.managerId===m.id).map(a=>a.id);
+    const clientCount=users.filter(u=>myAgents.includes(u.assignedAgentId)).length;
+    const revenue=users.filter(u=>myAgents.includes(u.assignedAgentId)).reduce((sum,u)=>sum+(u.totalDeposited||0),0);
+    return `<tr>
+      <td><div style="font-weight:600">${escHTML(m.firstName)} ${escHTML(m.lastName)}</div><div style="font-size:11px;color:var(--t2)">${escHTML(m.email||'')}</div></td>
+      <td style="font-size:12px;font-family:var(--font-data)">${escHTML(m.username)}</td>
+      <td style="font-weight:700">${agentCount}</td>
+      <td style="font-weight:700">${clientCount}</td>
+      <td style="color:var(--up);font-weight:700">${fmtMoney(revenue)}</td>
+      <td style="font-size:12px">${m.lastLogin?ago(m.lastLogin):'Never'}</td>
+      <td>${statusBadge(m.status)}</td>
+      <td>
+        <button class="table-action" onclick="openEditStaff('${m.id}')">Edit</button>
+        <button class="table-action ${m.status==='active'?'red':''}" onclick="toggleStaffStatus('${m.id}')">${m.status==='active'?'Disable':'Enable'}</button>
+        <button class="table-action red" onclick="deleteStaff('${m.id}')">Del</button>
+      </td></tr>`;
+  }).join('') || `<tr><td colspan="8"><div class="empty-state"><i class="fas fa-user-tie"></i>No managers found</div></td></tr>`;
+}
+
+// ─── RET MANAGERS ───
+function renderRetManagers(){
+  const staff=getStaff(); const users=getUsers();
+  const q=(document.getElementById('retSearch').value||'').toLowerCase();
+  const rets=staff.filter(s=>s.role==='ret_manager').filter(r=>!q||(r.firstName+' '+r.lastName).toLowerCase().includes(q));
+  const calls=ls('mbc_crm_calls')||[];
+  const tbody=document.getElementById('retTbody');
+  tbody.innerHTML=rets.map(r=>{
+    const myClients=users.filter(u=>u.retManagerId===r.id).length;
+    const myCalls=calls.filter(c=>c.agentId===r.id).length;
+    return `<tr>
+      <td><div style="font-weight:600">${escHTML(r.firstName)} ${escHTML(r.lastName)}</div><div style="font-size:11px;color:var(--t2)">${escHTML(r.email||'')}</div></td>
+      <td style="font-size:12px;font-family:var(--font-data)">${escHTML(r.username)}</td>
+      <td style="font-weight:700">${myClients}</td>
+      <td style="font-weight:700">${myCalls}</td>
+      <td style="font-size:12px">${r.lastLogin?ago(r.lastLogin):'Never'}</td>
+      <td>${statusBadge(r.status)}</td>
+      <td>
+        <button class="table-action" onclick="openEditStaff('${r.id}')">Edit</button>
+        <button class="table-action ${r.status==='active'?'red':''}" onclick="toggleStaffStatus('${r.id}')">${r.status==='active'?'Disable':'Enable'}</button>
+        <button class="table-action red" onclick="deleteStaff('${r.id}')">Del</button>
+      </td></tr>`;
+  }).join('') || `<tr><td colspan="7"><div class="empty-state"><i class="fas fa-user-shield"></i>No retention managers found</div></td></tr>`;
+}
+
+// ─── ANALYTICS ───
+function renderAnalytics(){
+  const users=getUsers(); const deps=getDeposits(); const leads=getLeads();
+  let totalDep=0,totalAUM=0,ftdCount=0,avgDep=0;
+  const approved=deps.filter(d=>d.status==='approved');
+  approved.forEach(d=>totalDep+=Number(d.amount||0));
+  users.forEach(u=>{ const p=getPortfolio(u.id); if(p) totalAUM+=(p.balance||0); if(u.ftdDate) ftdCount++; });
+  avgDep=approved.length>0?(totalDep/approved.length):0;
+  const html=s=>`<div class="crm-stat"><div class="crm-stat-top"></div><div class="crm-stat-label">${s.l}</div><div class="crm-stat-val">${s.v}</div><div class="crm-stat-change up">${s.c}</div></div>`;
+  document.getElementById('analyticsStats').innerHTML=[
+    {l:'Total Deposits (Approved)',v:fmtMoney(totalDep),c:approved.length+' transactions'},
+    {l:'Live AUM',v:fmtMoney(totalAUM),c:'Across '+users.length+' clients'},
+    {l:'Total FTDs',v:ftdCount,c:users.length>0?((ftdCount/users.length*100).toFixed(0)+'% conversion'):''},
+    {l:'Avg. Deposit',v:fmtMoney(avgDep),c:'Per approved deposit'}
+  ].map(html).join('');
+  // Simple bar chart (last 6 months)
+  const months=[]; for(let i=5;i>=0;i--){ const d=new Date(); d.setMonth(d.getMonth()-i); months.push({y:d.getFullYear(),m:d.getMonth(),label:d.toLocaleString('default',{month:'short'})}); }
+  const monthTotals=months.map(mo=>approved.filter(d=>{ const dd=new Date(d.reviewedAt||d.requestDate||d.createdAt); return dd.getFullYear()===mo.y&&dd.getMonth()===mo.m; }).reduce((s,d)=>s+Number(d.amount||0),0));
+  const maxVal=Math.max(...monthTotals,1);
+  document.getElementById('analyticsDepChart').innerHTML=monthTotals.map((v,i)=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px"><div style="flex:1;width:100%;display:flex;align-items:flex-end"><div style="width:100%;background:var(--red);border-radius:4px 4px 0 0;height:${Math.max(4,(v/maxVal*120))}px;opacity:.8;transition:height .3s"></div></div><div style="font-size:10px;color:var(--t2)">${months[i].label}</div></div>`).join('');
+  // Funnel
+  const stages=['new','contacted','qualified','interested','kyc_pending','ftd','active_trader'];
+  const total=leads.length||1;
+  document.getElementById('analyticsFunnel').innerHTML=stages.map(s=>{ const cnt=leads.filter(l=>l.status===s).length; const pct=Math.round(cnt/total*100); return `<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px">${s.replace(/_/g,' ')}</span><span style="font-size:12px;font-weight:600">${cnt} (${pct}%)</span></div><div style="height:6px;background:rgba(255,255,255,.07);border-radius:3px"><div style="height:100%;background:var(--red);border-radius:3px;width:${pct}%;opacity:.8"></div></div></div>`; }).join('');
+}
+
+// ─── AUDIT ───
+function renderAudit(){
+  const audit=getAudit();
+  const q=(document.getElementById('auditSearch').value||'').toLowerCase();
+  const tF=document.getElementById('auditTypeFilter').value;
+  const filtered=audit.filter(a=>(!q||(a.details||'').toLowerCase().includes(q)||(a.actorName||'').toLowerCase().includes(q))&&(!tF||a.action===tF));
+  const colorMap={deposit:'audit-deposit',balance:'audit-balance',block:'audit-block',assign:'audit-assign',kyc:'audit-kyc',note:'audit-kyc'};
+  document.getElementById('auditTbody').innerHTML=filtered.slice(0,100).map(a=>`<tr>
+    <td style="font-size:12px;white-space:nowrap">${fmtTime(a.ts)}</td>
+    <td><span class="crm-audit-action ${colorMap[a.action]||'audit-assign'}">${escHTML(a.action)}</span></td>
+    <td style="font-size:12px">${escHTML(a.details||'—')}</td>
+    <td style="font-size:12px">${escHTML(a.actorName||'—')}</td>
+    <td style="font-size:12px">${a.clientId?`<button class="table-action" onclick="openClientDrawer('${a.clientId}')">${escHTML(a.clientId)}</button>`:'—'}</td>
+  </tr>`).join('') || `<tr><td colspan="5"><div class="empty-state"><i class="fas fa-history"></i>No audit entries</div></td></tr>`;
+}
+
+// ─── STAFF MODALS ───
+function openAddStaff(role){
+  document.getElementById('sf_role').value=role||'agent';
+  const mgrs=getStaff().filter(s=>s.role==='manager');
+  const sel=document.getElementById('sf_mgr');
+  sel.innerHTML='<option value="">— None —</option>';
+  mgrs.forEach(m=>{ const o=document.createElement('option'); o.value=m.id; o.textContent=m.firstName+' '+m.lastName; sel.appendChild(o); });
+  openModal('addStaff');
+}
+function openModal(id){ document.getElementById('modal-'+id).style.display='flex'; }
+function closeModal(id){ document.getElementById('modal-'+id).style.display='none'; }
+function createStaff(){
+  const first=document.getElementById('sf_first').value.trim();
+  const last=document.getElementById('sf_last').value.trim();
+  const user=document.getElementById('sf_user').value.trim();
+  const email=document.getElementById('sf_email').value.trim();
+  const role=document.getElementById('sf_role').value;
+  const mgr=document.getElementById('sf_mgr').value;
+  const pw=document.getElementById('sf_pw').value;
+  if(!first||!user||!pw){ toast('First name, username and password required','error'); return; }
+  const staff=getStaff();
+  if(staff.find(s=>s.username===user)){ toast('Username already exists','error'); return; }
+  const newMember={ id:'stf_'+Date.now(), firstName:first, lastName:last, username:user, email, role, managerId:mgr||null, status:'active', password:btoa(pw), created:new Date().toISOString(), lastLogin:null, permissions:{canAdjustBalance:role!=='agent',canApproveDeposits:role!=='agent',canBlockClients:role!=='agent',canReassignClients:true,canCreateAgents:role==='manager'} };
+  staff.push(newMember); ls('mbc_crm_staff',staff);
+  logAudit('assign',`New ${role} created: ${first} ${last} (${user})`,null);
+  closeModal('addStaff'); toast(`${role} account created for ${first}`,'success');
+  ['sf_first','sf_last','sf_user','sf_email','sf_pw'].forEach(id=>document.getElementById(id).value='');
+  renderAgents(); renderManagers(); renderRetManagers();
+}
+function openEditStaff(id){ const s=getStaff().find(x=>x.id===id); if(!s) return; toast('Edit staff: use the form above and recreate — coming in full build'); }
+function toggleStaffStatus(id){ const staff=getStaff(); const idx=staff.findIndex(s=>s.id===id); if(idx<0) return; staff[idx].status=staff[idx].status==='active'?'inactive':'active'; ls('mbc_crm_staff',staff); logAudit('assign',`Staff ${id} status toggled to ${staff[idx].status}`,null); toast('Staff status updated'); renderAgents(); renderManagers(); renderRetManagers(); }
+function deleteStaff(id){ if(!confirm('Delete this staff member? Their clients will be unassigned.')) return; const staff=getStaff().filter(s=>s.id!==id); ls('mbc_crm_staff',staff); logAudit('assign','Staff deleted: '+id,null); toast('Staff member deleted'); renderAgents(); renderManagers(); renderRetManagers(); }
+
+// ─── CREATE LEAD ───
+function createLead(){
+  const first=document.getElementById('ld_first').value.trim();
+  const last=document.getElementById('ld_last').value.trim();
+  const email=document.getElementById('ld_email').value.trim();
+  const phone=document.getElementById('ld_phone').value.trim();
+  const country=document.getElementById('ld_country').value.trim();
+  const source=document.getElementById('ld_source').value;
+  const agent=document.getElementById('ld_agent').value;
+  const notes=document.getElementById('ld_notes').value.trim();
+  if(!first||!email){ toast('First name and email required','error'); return; }
+  const leads=getLeads();
+  leads.push({ id:'lead_'+Date.now(), firstName:first, lastName:last, email, phone, country, source, campaign:'', status:'new', assignedAgentId:agent||null, assignedManagerId:null, notes, createdAt:new Date().toISOString(), updatedAt:new Date().toISOString(), convertedUserId:null });
+  ls('mbc_crm_leads',leads);
+  logAudit('assign','Lead created: '+first+' '+last,null);
+  closeModal('addLead'); toast('Lead created','success');
+  renderLeads();
+}
+// Populate lead agent dropdown
+function populateLeadAgentSel(){ const sel=document.getElementById('ld_agent'); if(sel.options.length>1) return; getStaff().filter(s=>s.role==='agent').forEach(a=>{ const o=document.createElement('option'); o.value=a.id; o.textContent=a.firstName+' '+a.lastName; sel.appendChild(o); }); }
+
+// ─── BALANCE ADJUSTMENT ───
+var _balClientId=null;
+function openBalanceModal(uid){ _balClientId=uid; const u=getUsers().find(x=>x.id===uid)||{}; document.getElementById('balClientName').textContent=(u.firstName||'')+' '+(u.lastName||''); openModal('balance'); }
+function executeBalanceAdj(){
+  if(!_balClientId){ toast('No client selected','error'); return; }
+  const amount=parseFloat(document.getElementById('balAmount').value);
+  const type=document.getElementById('balType').value;
+  const reason=document.getElementById('balReason').value.trim();
+  if(!amount||amount<=0){ toast('Enter a valid amount','error'); return; }
+  if(!reason){ toast('Reason required','error'); return; }
+  const p=getPortfolio(_balClientId)||{balance:0,startBalance:0,positions:[],orders:[],history:[]};
+  const delta=type==='debit'?-Math.abs(amount):Math.abs(amount);
+  p.balance=(p.balance||0)+delta;
+  if(p.cash!==undefined) p.cash=p.balance;
+  p.history.unshift({type:'adjustment',label:type.toUpperCase(),sym:'USD',amount:Math.abs(amount),fillPrice:Math.abs(amount),qty:1,side:type==='debit'?'debit':'credit',pnl:null,note:reason,timestamp:new Date().toISOString(),time:Date.now(),adjustedBy:'admin'});
+  ls('mbc_portfolio_'+_balClientId,p);
+  broadcastCRMAction('balance_adjusted',{userId:_balClientId,delta,reason});
+  logAudit('balance',`Balance ${type}: ${fmtMoney(amount)} — Reason: ${reason}`,_balClientId);
+  closeModal('balance'); toast(`Balance ${type}: ${fmtMoney(amount)}`,'success');
+  if(currentDrawerClient===_balClientId) renderDrawerTab('overview');
+  _balClientId=null;
+}
+
+// ─── ASSIGN ───
+var _assignClientId=null;
+function openAssignModal(uid){ _assignClientId=uid; const u=getUsers().find(x=>x.id===uid)||{}; document.getElementById('assignClientName').textContent=(u.firstName||'')+' '+(u.lastName||''); const staff=getStaff(); const agSel=document.getElementById('assignAgentSel'); const mSel=document.getElementById('assignMgrSel'); agSel.innerHTML='<option value="">— Keep current —</option>'; mSel.innerHTML='<option value="">— Keep current —</option>'; staff.filter(s=>s.role==='agent'&&s.status==='active').forEach(a=>{ const o=document.createElement('option'); o.value=a.id; o.textContent=a.firstName+' '+a.lastName; if(a.id===u.assignedAgentId) o.selected=true; agSel.appendChild(o); }); staff.filter(s=>s.role==='manager'&&s.status==='active').forEach(m=>{ const o=document.createElement('option'); o.value=m.id; o.textContent=m.firstName+' '+m.lastName; if(m.id===u.assignedManagerId) o.selected=true; mSel.appendChild(o); }); openModal('assign'); }
+function executeAssign(){
+  if(!_assignClientId) return;
+  const agentId=document.getElementById('assignAgentSel').value;
+  const mgrId=document.getElementById('assignMgrSel').value;
+  const users=getUsers(); const idx=users.findIndex(u=>u.id===_assignClientId); if(idx<0) return;
+  if(agentId) users[idx].assignedAgentId=agentId;
+  if(mgrId) users[idx].assignedManagerId=mgrId;
+  ls('mbc_users',users);
+  logAudit('assign',`Client reassigned — agent:${agentId||'unchanged'} mgr:${mgrId||'unchanged'}`,_assignClientId);
+  broadcastCRMAction('client_reassigned',{userId:_assignClientId,agentId,mgrId});
+  closeModal('assign'); toast('Client reassigned','success');
+  renderClients(); _assignClientId=null;
+}
+
+// ─── KYC ───
+var _kycClientId=null;
+function openKYCModal(uid){ _kycClientId=uid; const u=getUsers().find(x=>x.id===uid)||{}; document.getElementById('kycClientName').textContent=(u.firstName||'')+' '+(u.lastName||''); document.getElementById('kycStatusSel').value=u.kycStatus||'not_started'; openModal('kyc'); }
+function executeKYC(){
+  if(!_kycClientId) return;
+  const status=document.getElementById('kycStatusSel').value;
+  const note=document.getElementById('kycNote').value.trim();
+  const users=getUsers(); const idx=users.findIndex(u=>u.id===_kycClientId); if(idx<0) return;
+  users[idx].kycStatus=status; users[idx].kycUpdatedAt=new Date().toISOString(); users[idx].kycNote=note;
+  ls('mbc_users',users);
+  logAudit('kyc',`KYC updated to ${status}${note?' — '+note:''}`,_kycClientId);
+  broadcastCRMAction('kyc_updated',{userId:_kycClientId,status});
+  closeModal('kyc'); toast('KYC status updated to '+status,'success');
+  renderClients(); _kycClientId=null;
+}
+
+// ─── BLOCK/UNBLOCK ───
+function toggleBlock(uid){
+  const users=getUsers(); const idx=users.findIndex(u=>u.id===uid); if(idx<0) return;
+  const wasBlocked=users[idx].crmStatus==='blocked';
+  users[idx].crmStatus=wasBlocked?'active':'blocked';
+  ls('mbc_users',users);
+  broadcastCRMAction(wasBlocked?'unblock_client':'block_client',{userId:uid});
+  logAudit('block',(wasBlocked?'Client unblocked':'Client blocked'),uid);
+  toast('Client '+(wasBlocked?'unblocked':'blocked'),'success');
+  renderClients();
+}
+
+// ─── TAG TOGGLE ───
+function toggleTag(uid,tag){ const users=getUsers(); const idx=users.findIndex(u=>u.id===uid); if(idx<0) return; const tags=users[idx].tags||[]; const ti=tags.indexOf(tag); if(ti>=0) tags.splice(ti,1); else tags.push(tag); users[idx].tags=tags; ls('mbc_users',users); renderDrawerTab('admin'); toast('Tag updated'); }
+
+// ─── FORCE CLOSE POSITION ───
+function forceClosePosition(uid,posId){
+  if(!confirm('Force close this position?')) return;
+  const p=getPortfolio(uid)||{positions:[],history:[],balance:0};
+  const posIdx=p.positions.findIndex(x=>x.id===posId||x.sym===posId);
+  if(posIdx<0){ toast('Position not found','error'); return; }
+  const pos=p.positions[posIdx]; const pnl=pos.pnl||0;
+  p.balance=(p.balance||0)+pnl;
+  p.history.unshift({type:'admin-close',label:'ADMIN CLOSE',sym:pos.sym||pos.symbol||'',amount:Math.abs(pnl),fillPrice:pos.entry||0,qty:pos.qty||1,side:pos.side||'',pnl,note:'Force closed by admin',timestamp:new Date().toISOString(),time:Date.now(),closedBy:'admin'});
+  p.positions.splice(posIdx,1);
+  ls('mbc_portfolio_'+uid,p);
+  broadcastCRMAction('position_closed',{userId:uid,positionId:posId,pnl});
+  logAudit('balance','Force closed position '+posId+' PnL: '+pnl.toFixed(2),uid);
+  toast('Position force closed','success');
+  renderDrawerTab('portfolio');
+}
+
+// ─── NOTIFICATIONS PUSH ───
+function pushNotification(title,body,type){
+  const notifs=getNotifications();
+  notifs.unshift({id:'notif_'+Date.now(),title,body,type,ts:new Date().toISOString(),read:false});
+  ls('mbc_crm_notifications',notifs.slice(0,100));
+  const bc=new BroadcastChannel('mbc-crm-notifications');
+  bc.postMessage({title,body,type}); bc.close();
+  renderNotifications();
+}
+
+// ─── SETTINGS ───
+async function changeAdminPw(){
+  const oldPw=document.getElementById('settOldPw').value;
+  const newPw=document.getElementById('settNewPw').value;
+  const confPw=document.getElementById('settConfPw').value;
+  const ADMIN_HASH='76cf565122358cc4b49b16a7108b99515f8a8deff56ab4a801b180c38ccc4426';
+  async function sha256(s){ const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)); return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join(''); }
+  const msg=document.getElementById('settMsg');
+  if(await sha256(oldPw)!==ADMIN_HASH){ msg.style.color='var(--dn)'; msg.textContent='Current password incorrect.'; return; }
+  if(newPw.length<8){ msg.style.color='var(--dn)'; msg.textContent='Password must be at least 8 characters.'; return; }
+  if(newPw!==confPw){ msg.style.color='var(--dn)'; msg.textContent='Passwords do not match.'; return; }
+  const newHash=await sha256(newPw);
+  localStorage.setItem('mbc_admin_pw_override',newHash);
+  msg.style.color='var(--up)'; msg.textContent='Password updated successfully.';
+  logAudit('assign','Admin password changed',null);
+}
+
+function clearCRMData(){
+  ['mbc_crm_staff','mbc_crm_leads','mbc_crm_audit_log','mbc_crm_notifications','mbc_crm_notes','mbc_crm_calls','mbc_crm_tasks','mbc_crm_session','mbc_crm_admin_action'].forEach(k=>localStorage.removeItem(k));
+  toast('CRM data cleared'); setTimeout(()=>window.location.href='index.html',1500);
+}
+function exportData(){
+  const snap={}; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); snap[k]=localStorage.getItem(k); }
+  const blob=new Blob([JSON.stringify(snap,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='mbc_crm_snapshot_'+Date.now()+'.json'; a.click(); URL.revokeObjectURL(url);
+}
+
+// ─── LOGOUT ───
+function doLogout(){ localStorage.removeItem('mbc_crm_session'); window.location.href='index.html'; }
+
+// ─── REALTIME SYNC ───
+const bc=new BroadcastChannel('mbc-crm-sync');
+bc.onmessage=function(e){ if(e.data&&e.data.action){ const active=document.querySelector('.section.active'); if(active) { const id=active.id.replace('sec-',''); const r={clients:renderClients,dashboard:renderDashboard,deposits:renderDeposits}; if(r[id]) r[id](); } } };
+
+// ─── INIT ───
+renderDashboard();
+// Populate add staff manager select
+(function(){ const mgrs=getStaff().filter(s=>s.role==='manager'); const sel=document.getElementById('sf_mgr'); mgrs.forEach(m=>{ const o=document.createElement('option'); o.value=m.id; o.textContent=m.firstName+' '+m.lastName; sel.appendChild(o); }); populateLeadAgentSel(); const unread=getNotifications().filter(n=>!n.read).length; const badge=document.getElementById('notifBadge'); badge.textContent=unread; badge.style.display=unread>0?'inline':'none'; })();
+</script>
+</body>
+</html>
