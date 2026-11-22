@@ -349,7 +349,8 @@ function renderDashboard(){
   const totalDep=myDeps.filter(d=>d.status==='approved').reduce((s,d)=>s+Number(d.amount||0),0);
   const ftds=clients.filter(c=>c.ftdDate).length;
   const colors=['s-blue','s-green','s-gold','s-red'];
-  const html=(s,i)=>`<div class="crm-stat ${colors[i]||''}"><div class="crm-stat-top"></div><div class="crm-stat-label">${s.l}</div><div class="crm-stat-val">${s.v}</div><div class="crm-stat-change up">${s.c}</div></div>`;
+  const dcols=['blue','red','green','green'];
+  const html=(s,i)=>`<div class="crm-stat ${colors[i]||''}" data-color="${dcols[i]||'blue'}"><div class="crm-stat-top"></div><div class="crm-stat-label">${s.l}</div><div class="crm-stat-val">${s.v}</div><div class="crm-stat-change up">${s.c}</div></div>`;
   document.getElementById('dashStats').innerHTML=[
     {l:'My Agents',v:agents.length,c:'Active team members'},
     {l:'Total Clients',v:clients.length,c:'Across all agents'},
@@ -619,7 +620,8 @@ function renderPerformance(){
   let totalFTD=0,totalDep=0;
   agents.forEach(a=>{const ac=clients.filter(c=>c.assignedAgentId===a.id);ac.forEach(c=>{if(c.ftdDate)totalFTD++;totalDep+=(c.totalDeposited||0);});});
   const pColors=['s-blue','s-green','s-gold','s-red'];
-  const html=(s,i)=>`<div class="crm-stat ${pColors[i]||''}"><div class="crm-stat-top"></div><div class="crm-stat-label">${s.l}</div><div class="crm-stat-val">${s.v}</div><div class="crm-stat-change up">${s.c}</div></div>`;
+  const pDcols=['blue','red','green','green'];
+  const html=(s,i)=>`<div class="crm-stat ${pColors[i]||''}" data-color="${pDcols[i]||'blue'}"><div class="crm-stat-top"></div><div class="crm-stat-label">${s.l}</div><div class="crm-stat-val">${s.v}</div><div class="crm-stat-change up">${s.c}</div></div>`;
   document.getElementById('perfStats').innerHTML=[
     {l:'Team Agents',v:agents.length,c:'Active'},
     {l:'Total Clients',v:getMyClients().length,c:'Managed'},

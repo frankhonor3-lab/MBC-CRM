@@ -942,4 +942,11 @@ input, select, textarea { font-family: var(--font); }
   font-weight: 600 !important;
 }
 
+/* ══ CRM ICON SYSTEM — D: Multi-Colour ══════════════════════════════════════ */
+[data-color="red"]   { background: rgba(217,18,34,.12) !important; border: 1px solid rgba(217,18,34,.22) !important; color: #ff6670 !important; }
+[data-color="blue"]  { background: rgba(79,168,255,.12) !important; border: 1px solid rgba(79,168,255,.22) !important; color: #4FA8FF !important; }
+[data-color="gold"]  { background: rgba(245,184,67,.12) !important; border: 1px solid rgba(245,184,67,.22) !important; color: #F5B843 !important; }
+[data-color="green"] { background: rgba(38,201,163,.12) !important; border: 1px solid rgba(38,201,163,.22) !important; color: #26C9A3 !important; }
+/* ══ END ════════════════════════════════════════════════════════════════════ */
+
 /* ══ END Polish Pass ══════════════════════════════════════════════════════ */

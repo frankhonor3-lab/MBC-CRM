@@ -120,7 +120,7 @@ select.filter-sel{padding:9px 12px;background:rgba(255,255,255,.06);border:1px s
       <!-- DORMANT -->
       <div class="section" id="sec-dormant">
         <div class="crm-card" style="margin-bottom:16px;padding:14px 20px;background:rgba(239,83,80,.06);border-color:rgba(239,83,80,.2)">
-          <div style="font-size:13px;font-weight:600;color:var(--dn)"><i class="fas fa-exclamation-triangle" style="margin-right:6px"></i>Dormancy Tiers: At Risk (7d) · Warning (14d) · Dormant (30d) · Churned (90d)</div>
+          <div style="font-size:13px;font-weight:600;color:var(--dn)" data-color="red"><i class="fas fa-exclamation-triangle" style="margin-right:6px"></i>Dormancy Tiers: At Risk (7d) · Warning (14d) · Dormant (30d) · Churned (90d)</div>
         </div>
         <div class="action-bar">
           <select class="filter-sel" id="dormantTierFilter" onchange="renderDormant()">
@@ -272,7 +272,8 @@ function renderDashboard(){
   const users=getUsers();const calls=getCalls().filter(c=>c.agentId===currentStaff.id);
   const dormantList=users.filter(u=>daysInactive(u)>=7);
   const rColors=['s-blue','s-gold','s-green','s-red'];
-  const html=(s,i)=>`<div class="crm-stat ${rColors[i]||''}"><div class="crm-stat-top"></div><div class="crm-stat-label">${s.l}</div><div class="crm-stat-val">${s.v}</div><div class="crm-stat-change ${s.up?'up':'dn'}">${s.c}</div></div>`;
+  const rDcols=['red','red','blue','red'];
+  const html=(s,i)=>`<div class="crm-stat ${rColors[i]||''}" data-color="${rDcols[i]||'blue'}"><div class="crm-stat-top"></div><div class="crm-stat-label">${s.l}</div><div class="crm-stat-val">${s.v}</div><div class="crm-stat-change ${s.up?'up':'dn'}">${s.c}</div></div>`;
   document.getElementById('dashStats').innerHTML=[
     {l:'Total Clients',v:users.length,c:'Platform wide',up:true},
     {l:'At Risk (7d+)',v:dormantList.length,c:'Need attention',up:dormantList.length===0},

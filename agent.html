@@ -288,7 +288,8 @@ function renderDashboard(){
   const myDeps=deps.filter(d=>clients.some(c=>c.id===d.userId));
   const pendingDeps=myDeps.filter(d=>d.status==='pending');
   const colors=['s-green','s-blue','s-gold','s-red'];
-  const html=(s,i)=>`<div class="crm-stat ${colors[i]||''}"><div class="crm-stat-top"></div><div class="crm-stat-label">${s.l}</div><div class="crm-stat-val">${s.v}</div><div class="crm-stat-change up">${s.c}</div></div>`;
+  const dcols=['red','blue','green','green'];
+  const html=(s,i)=>`<div class="crm-stat ${colors[i]||''}" data-color="${dcols[i]||'blue'}"><div class="crm-stat-top"></div><div class="crm-stat-label">${s.l}</div><div class="crm-stat-val">${s.v}</div><div class="crm-stat-change up">${s.c}</div></div>`;
   document.getElementById('dashStats').innerHTML=[
     {l:'My Clients',v:clients.length,c:'Assigned to me'},
     {l:'My Leads',v:leads.length,c:leads.filter(l=>l.status==='new').length+' new'},
