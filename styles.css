@@ -764,3 +764,182 @@ input, select, textarea { font-family: var(--font); }
 .badge-pending  { background: rgba(245,184,67,.12); color: var(--gold); border: 1px solid rgba(245,184,67,.2); }
 .badge-approved { background: rgba(38,201,163,.12); color: var(--up); border: 1px solid rgba(38,201,163,.2); }
 .badge-rejected { background: rgba(239,83,80,.12); color: var(--dn); border: 1px solid rgba(239,83,80,.2); }
+
+/* ══ CRM ICON SYSTEM v2 — Refined Containers ══════════════════════════════ */
+.crm-ico {
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.crm-ico svg { width: 100%; height: 100%; display: block; }
+.crm-ico-16 { width: 16px; height: 16px; }
+.crm-ico-18 { width: 18px; height: 18px; }
+.crm-ico-20 { width: 20px; height: 20px; }
+.crm-ico-24 { width: 24px; height: 24px; }
+
+/* ── Stat card accent upgrade ─────────────────────── */
+.crm-stat {
+  background: linear-gradient(145deg, #0a0c10, #0d1018) !important;
+  border: 1px solid rgba(255,255,255,.07) !important;
+  position: relative;
+  overflow: hidden;
+}
+.crm-stat::after {
+  content: '';
+  position: absolute; bottom: 0; right: 16px;
+  width: 40px; height: 40px;
+  opacity: .04;
+  background: radial-gradient(circle, currentColor 0%, transparent 70%);
+  border-radius: 50%;
+  color: white;
+}
+
+/* ── Sidebar nav refinement ──────────────────────── */
+.crm-nav a.active {
+  background: rgba(217,18,34,.12) !important;
+  color: #fff !important;
+  border-left: 2px solid var(--red);
+  padding-left: 14px !important;
+}
+.crm-nav a:hover {
+  background: rgba(255,255,255,.06) !important;
+  color: rgba(255,255,255,.9) !important;
+}
+
+/* ── Table row hover glow ────────────────────────── */
+.crm-table tbody tr:hover {
+  background: rgba(79,168,255,.03) !important;
+  box-shadow: inset 0 0 0 1px rgba(79,168,255,.06);
+}
+
+/* ── Card header upgrade ─────────────────────────── */
+.crm-card-header h3 {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.7px !important;
+  color: rgba(255,255,255,.35) !important;
+}
+
+/* ── Badge refinements ───────────────────────────── */
+.badge {
+  letter-spacing: 0.4px !important;
+  font-size: 10px !important;
+  padding: 2px 8px !important;
+}
+
+/* ── Form input glow on focus ────────────────────── */
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  box-shadow: 0 0 0 3px rgba(217,18,34,.12) !important;
+}
+
+/* ── Topbar refinement ───────────────────────────── */
+.crm-topbar {
+  background: linear-gradient(to right, #090b0f, #0a0c10) !important;
+  border-bottom: 1px solid rgba(255,255,255,.05) !important;
+}
+
+/* ── Sidebar refinement ──────────────────────────── */
+.crm-sidebar {
+  background: linear-gradient(to bottom, #07090d, #080a0e) !important;
+}
+
+/* ══ END CRM ICON SYSTEM v2 ════════════════════════════════════════════════ */
+
+/* ══ Polish Pass — Institutional Refinement ══════════════════════════════ */
+
+/* Sidebar logo — subtle gradient, no heavy red fill */
+.crm-sidebar-logo {
+  background: linear-gradient(to bottom, rgba(217,18,34,.06), transparent) !important;
+  border-bottom: 1px solid rgba(255,255,255,.05) !important;
+}
+
+/* Stat values — tighter, more data-terminal feel */
+.crm-stat-value {
+  font-size: 24px !important;
+  letter-spacing: -0.5px !important;
+}
+/* Also target the JS-rendered alias */
+.crm-stat-val {
+  font-size: 24px !important;
+  letter-spacing: -0.5px !important;
+}
+
+/* Section titles — slightly smaller, crisper */
+.crm-section-title {
+  font-size: 18px !important;
+  letter-spacing: -0.2px !important;
+}
+
+/* Active nav item — left-border indicator for .crm-nav-item (HTML class) */
+.crm-nav-item.active {
+  background: rgba(217,18,34,.1) !important;
+  color: #fff !important;
+  border-left: 2px solid var(--red) !important;
+  padding-left: 14px !important;
+  margin-left: 8px !important;
+}
+.crm-nav-item:hover {
+  background: rgba(255,255,255,.05) !important;
+  color: rgba(255,255,255,.9) !important;
+}
+
+/* Stat cards — cleaner, less heavy */
+.crm-stat {
+  background: #0a0c10 !important;
+  border: 1px solid rgba(255,255,255,.06) !important;
+  border-radius: 10px !important;
+}
+/* Remove heavy after-pseudo glow */
+.crm-stat::after { display: none !important; }
+
+/* Sidebar logo tag — lighter, more subtle */
+.crm-sidebar-logo-tag {
+  background: rgba(217,18,34,.12) !important;
+  color: rgba(217,18,34,.7) !important;
+  font-size: 8px !important;
+  letter-spacing: 1.2px !important;
+}
+
+/* Main content area — consistent padding */
+.crm-main {
+  padding: 28px 32px !important;
+}
+
+/* Card body — proper breathing room */
+.crm-card-body {
+  padding: 20px !important;
+}
+
+/* Topbar title — slightly more weight */
+.crm-topbar-title {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.1px !important;
+}
+
+/* Table th — cleaner header */
+.crm-table th {
+  font-size: 10px !important;
+  letter-spacing: 0.6px !important;
+  color: rgba(232,236,240,.4) !important;
+  padding: 11px 14px !important;
+}
+
+/* Nav section labels — more refined */
+.crm-nav-section {
+  font-size: 9px !important;
+  letter-spacing: 1px !important;
+  color: rgba(255,255,255,.18) !important;
+  padding: 14px 20px 5px !important;
+}
+
+/* Drawer tabs — cleaner underline */
+.crm-drawer-tab.active {
+  color: var(--text) !important;
+  border-bottom-color: var(--red) !important;
+  font-weight: 600 !important;
+}
+
+/* ══ END Polish Pass ══════════════════════════════════════════════════════ */
