@@ -458,7 +458,19 @@ function renderDrawerTab(tab){
         +'</td>'
         +'</tr>';
     }).join('')}</tbody></table>`:'<div style="color:var(--t2);font-size:13px">No open positions</div>'}
-    </div><div>${history.map(h=>`<div class="timeline-item"><div class="timeline-dot ${h.type==='deposit'||h.side==='credit'?'green':''}"></div><div><div style="font-size:13px">${escHTML(h.label||h.type||'')} ${h.sym||''} — ${fmtMoney(h.amount)}</div><div style="font-size:11px;color:var(--t2)">${fmtTime(h.timestamp||h.time)}</div></div></div>`).join('')||'<div style="color:var(--t2);font-size:13px">No history</div>'}</div>`;
+    </div>
+    <div style="padding:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px;margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">Place Trade</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <input type="text" id="mgrTradeSymbol" placeholder="Symbol e.g. BTC" style="padding:8px 10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:var(--text);font-family:var(--font);font-size:12px">
+        <select id="mgrTradeSide" style="padding:8px 10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:var(--text);font-family:var(--font);font-size:12px"><option value="long">Long ▲</option><option value="short">Short ▼</option></select>
+        <input type="number" id="mgrTradeQty" placeholder="Units" min="1" style="padding:8px 10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:var(--text);font-family:var(--font);font-size:12px">
+        <input type="number" id="mgrTradePrice" placeholder="Entry price" step="0.0001" style="padding:8px 10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:var(--text);font-family:var(--font);font-size:12px">
+      </div>
+      <button class="btn btn-primary" style="font-size:12px;padding:8px 16px" onclick="placeTradeAsManager('${u.id}')">Place Trade</button>
+    </div>
+    <div><div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">Recent History</div>
+    ${history.map(h=>`<div class="timeline-item"><div class="timeline-dot ${h.type==='deposit'||h.side==='credit'?'green':''}"></div><div><div style="font-size:13px">${escHTML(h.label||h.type||'')} ${h.sym||''} — ${fmtMoney(h.amount)}</div><div style="font-size:11px;color:var(--t2)">${fmtTime(h.timestamp||h.time)}</div></div></div>`).join('')||'<div style="color:var(--t2);font-size:13px">No history</div>'}</div>`;
   } else if(tab==='notes'){
     const notes=(ls('mbc_crm_notes')||[]).filter(n=>n.clientId===currentDrawerClient);
     html=`<div class="form-group"><label>Add Note</label><textarea id="drawerNoteInput" style="width:100%;min-height:80px;padding:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--text);font-family:var(--font);font-size:13px;resize:vertical" placeholder="Enter note…"></textarea></div>
@@ -498,6 +510,26 @@ function closePositionAsManager(uid,posId){
   ls('mbc_portfolio_'+uid,p);
   logAudit('balance','Closed position '+(pos.label||pos.sym||posId)+' P&L: '+pnl.toFixed(2),uid);
   toast('Position closed — P&L: '+(pnl>=0?'+':'')+pnl.toFixed(2),'success');
+  renderDrawerTab('portfolio');
+}
+function placeTradeAsManager(uid){
+  const sym=(document.getElementById('mgrTradeSymbol').value||'').trim().toUpperCase();
+  const side=document.getElementById('mgrTradeSide').value;
+  const qty=parseInt(document.getElementById('mgrTradeQty').value)||0;
+  const price=parseFloat(document.getElementById('mgrTradePrice').value)||0;
+  if(!sym){toast('Enter a symbol','error');return;}
+  if(qty<=0){toast('Enter a valid unit count','error');return;}
+  if(price<=0){toast('Enter a valid entry price','error');return;}
+  const p=getPortfolio(uid)||{positions:[],history:[],balance:0};
+  const posId='pos_'+Date.now();
+  const leverage=20;const margin=(price*qty)/leverage;
+  p.balance=Math.max(0,(p.balance||0)-margin);
+  (p.positions=p.positions||[]).push({id:posId,sym,label:sym,side,qty,entryPrice:price,entry:price,avgPrice:price,fillPrice:price,marginUsed:margin,leverage,pnl:0,openedAt:new Date().toISOString(),openedBy:currentStaff.username});
+  (p.history=p.history||[]).unshift({type:'open',label:'OPEN '+side.toUpperCase(),sym,amount:qty*price,fillPrice:price,qty,side,marginUsed:margin,pnl:null,note:'Placed by manager '+currentStaff.username,timestamp:new Date().toISOString(),time:Date.now()});
+  ls('mbc_portfolio_'+uid,p);
+  logAudit('balance',side.toUpperCase()+' '+qty+' '+sym+' @ '+price+' placed by manager',uid);
+  toast('Trade placed: '+side.toUpperCase()+' '+qty+' '+sym+' @ '+price,'success');
+  document.getElementById('mgrTradeSymbol').value='';document.getElementById('mgrTradeQty').value='';document.getElementById('mgrTradePrice').value='';
   renderDrawerTab('portfolio');
 }
 
