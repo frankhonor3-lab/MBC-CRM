@@ -881,6 +881,7 @@ function renderDrawerTab(tab){
           +'<td style="color:'+(pnl>=0?'var(--up)':'var(--dn)')+'">'+( pnl>=0?'+':'')+pnl.toFixed(2)+'</td>'
           +'<td style="display:flex;gap:4px">'
           +'<button class="table-action" style="background:rgba(79,168,255,.12);color:var(--blue);border-color:rgba(79,168,255,.25)" onclick="forceEditEntryPrice(\''+u.id+'\',\''+(pos.id||pos.sym)+'\')">Edit Entry</button>'
+          +'<button class="table-action" style="background:rgba(245,184,67,.12);color:#f5b843;border-color:rgba(245,184,67,.25)" onclick="forceEditLeverage(\''+u.id+'\',\''+(pos.id||pos.sym)+'\')">Leverage</button>'
           +'<button class="table-action red" onclick="forceClosePosition(\''+u.id+'\',\''+(pos.id||pos.sym)+'\')">Close</button>'
           +'</td>'
           +'</tr>';
@@ -1327,18 +1328,34 @@ function forceEditEntryPrice(uid,posId){
   const p=getPortfolio(uid)||{positions:[],history:[],balance:0};
   const pos=p.positions.find(x=>String(x.id)===String(posId)||x.sym===posId);
   if(!pos){ toast('Position not found','error'); return; }
-  const label=pos.label||pos.sym||pos.symbol||posId;
-  const current=pos.entryPrice||pos.entry||pos.avgPrice||pos.fillPrice||0;
-  const raw=prompt('Edit entry price for '+label+'\nCurrent: '+current+'\n\nEnter new entry price:',current);
-  if(raw===null||raw.trim()==='') return;
-  const newPrice=parseFloat(raw);
-  if(isNaN(newPrice)||newPrice<=0){ toast('Invalid price — enter a positive number','error'); return; }
-  pos.entryPrice=newPrice; pos.entry=newPrice; pos.avgPrice=newPrice; pos.fillPrice=newPrice;
-  ls('mbc_portfolio_'+uid,p);
-  broadcastCRMAction('position_edited',{userId:uid,positionId:posId,newEntryPrice:newPrice});
-  logAudit('balance','Admin edited entry price: '+label+' → '+newPrice+' (was '+current+')',uid);
-  toast('Entry price updated: '+label+' @ '+newPrice,'success');
-  renderDrawerTab('portfolio');
+  openCrmEntryModal(uid,posId,pos,p.balance,function(newPrice){
+    const label=pos.label||pos.sym||pos.symbol||posId;
+    const old=pos.entryPrice||pos.entry||pos.avgPrice||pos.fillPrice||0;
+    pos.entryPrice=newPrice; pos.entry=newPrice; pos.avgPrice=newPrice; pos.fillPrice=newPrice;
+    ls('mbc_portfolio_'+uid,p);
+    broadcastCRMAction('position_edited',{userId:uid,positionId:posId,newEntryPrice:newPrice});
+    logAudit('balance','Admin edited entry price: '+label+' → '+newPrice+' (was '+old+')',uid);
+    toast('Entry price updated: '+label+' @ '+newPrice,'success');
+    renderDrawerTab('portfolio');
+  });
+}
+function forceEditLeverage(uid,posId){
+  const p=getPortfolio(uid)||{positions:[],history:[],balance:0};
+  const pos=p.positions.find(x=>String(x.id)===String(posId)||x.sym===posId);
+  if(!pos){ toast('Position not found','error'); return; }
+  openCrmLevModal(uid,posId,pos,p.balance,function(newLev){
+    const ep=pos.entryPrice||pos.entry||pos.avgPrice||0;
+    const oldMargin=pos.marginUsed||(ep*(pos.qty||0))/(pos.leverage||20);
+    const newMargin=(ep*(pos.qty||0))/newLev;
+    const oldLev=pos.leverage||20;
+    p.balance=(p.balance||0)+oldMargin-newMargin;
+    pos.leverage=newLev; pos.marginUsed=newMargin;
+    ls('mbc_portfolio_'+uid,p);
+    broadcastCRMAction('position_edited',{userId:uid,positionId:posId,newLeverage:newLev});
+    logAudit('balance','Admin changed leverage: '+(pos.label||pos.sym)+' 1:'+oldLev+' → 1:'+newLev,uid);
+    toast('Leverage updated: 1:'+newLev+' on '+(pos.label||pos.sym||posId),'success');
+    renderDrawerTab('portfolio');
+  });
 }
 
 // ─── PLACE TRADE (Admin) ───
@@ -1419,6 +1436,7 @@ renderDashboard();
 // Populate add staff manager select
 (function(){ const mgrs=getStaff().filter(s=>s.role==='manager'); const sel=document.getElementById('sf_mgr'); mgrs.forEach(m=>{ const o=document.createElement('option'); o.value=m.id; o.textContent=m.firstName+' '+m.lastName; sel.appendChild(o); }); populateLeadAgentSel(); const notifs=buildNotifications(); const unread=notifs.filter(n=>!n.read).length; const badge=document.getElementById('notifBadge'); badge.textContent=unread; badge.style.display=unread>0?'inline':'none'; const kycCount=getUsers().filter(u=>(u.kycStatus||'not_started')==='pending').length; const kycB=document.getElementById('kycQueueBadge'); kycB.textContent=kycCount; kycB.style.display=kycCount>0?'inline':'none'; })();
 </script>
+<script src="crm-modals.js"></script>
 <script src="prices.js"></script>
 </body>
 </html>

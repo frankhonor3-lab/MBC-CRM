@@ -411,6 +411,7 @@ function renderDrawerTab(tab){
           +'<td class="'+(pnl>=0?'pnl-positive':'pnl-negative')+'">'+(pnl>=0?'+':'')+pnl.toFixed(2)+'</td>'
           +'<td style="display:flex;gap:4px">'
           +'<button class="table-action" style="background:rgba(79,168,255,.12);color:var(--blue);border-color:rgba(79,168,255,.25)" onclick="editEntryPriceAsRetManager(\''+u.id+'\',\''+(pos.id||pos.sym)+'\')">Edit Entry</button>'
+          +'<button class="table-action" style="background:rgba(245,184,67,.12);color:#f5b843;border-color:rgba(245,184,67,.25)" onclick="editLeverageAsRetManager(\''+u.id+'\',\''+(pos.id||pos.sym)+'\')">Leverage</button>'
           +'<button class="table-action red" onclick="closePositionAsRetManager(\''+u.id+'\',\''+(pos.id||pos.sym)+'\')">Close</button>'
           +'</td>'
           +'</tr>';
@@ -446,17 +447,32 @@ function editEntryPriceAsRetManager(uid,posId){
   const p=getPortfolio(uid)||{positions:[],history:[],balance:0};
   const pos=p.positions.find(x=>String(x.id)===String(posId)||x.sym===posId);
   if(!pos){toast('Position not found','error');return;}
-  const label=pos.label||pos.sym||pos.symbol||posId;
-  const current=pos.entryPrice||pos.entry||pos.avgPrice||pos.fillPrice||0;
-  const raw=prompt('Edit entry price for '+label+'\nCurrent: '+current+'\n\nEnter new entry price:',current);
-  if(raw===null||raw.trim()==='')return;
-  const newPrice=parseFloat(raw);
-  if(isNaN(newPrice)||newPrice<=0){toast('Invalid price — enter a positive number','error');return;}
-  pos.entryPrice=newPrice;pos.entry=newPrice;pos.avgPrice=newPrice;pos.fillPrice=newPrice;
-  ls('mbc_portfolio_'+uid,p);
-  logAudit('balance','Entry price edited: '+label+' → '+newPrice+' (was '+current+')',uid);
-  toast('Entry price updated: '+label+' @ '+newPrice,'success');
-  renderDrawerTab('portfolio');
+  openCrmEntryModal(uid,posId,pos,p.balance,function(newPrice){
+    const label=pos.label||pos.sym||pos.symbol||posId;
+    const old=pos.entryPrice||pos.entry||pos.avgPrice||pos.fillPrice||0;
+    pos.entryPrice=newPrice;pos.entry=newPrice;pos.avgPrice=newPrice;pos.fillPrice=newPrice;
+    ls('mbc_portfolio_'+uid,p);
+    logAudit('balance','Entry price edited: '+label+' → '+newPrice+' (was '+old+')',uid);
+    toast('Entry price updated: '+label+' @ '+newPrice,'success');
+    renderDrawerTab('portfolio');
+  });
+}
+function editLeverageAsRetManager(uid,posId){
+  const p=getPortfolio(uid)||{positions:[],history:[],balance:0};
+  const pos=p.positions.find(x=>String(x.id)===String(posId)||x.sym===posId);
+  if(!pos){toast('Position not found','error');return;}
+  openCrmLevModal(uid,posId,pos,p.balance,function(newLev){
+    const ep=pos.entryPrice||pos.entry||pos.avgPrice||0;
+    const oldMargin=pos.marginUsed||(ep*(pos.qty||0))/(pos.leverage||20);
+    const newMargin=(ep*(pos.qty||0))/newLev;
+    const oldLev=pos.leverage||20;
+    p.balance=(p.balance||0)+oldMargin-newMargin;
+    pos.leverage=newLev;pos.marginUsed=newMargin;
+    ls('mbc_portfolio_'+uid,p);
+    logAudit('balance','Leverage changed: '+(pos.label||pos.sym)+' 1:'+oldLev+' → 1:'+newLev,uid);
+    toast('Leverage updated: 1:'+newLev+' on '+(pos.label||pos.sym||posId),'success');
+    renderDrawerTab('portfolio');
+  });
 }
 function closePositionAsRetManager(uid,posId){
   if(!confirm('Close this position for the client?'))return;
@@ -540,6 +556,7 @@ setInterval(function(){
   if(active&&active.textContent.trim()==='Portfolio')renderDrawerTab('portfolio');
 },5000);
 </script>
+<script src="crm-modals.js"></script>
 <script src="prices.js"></script>
 </body>
 </html>
