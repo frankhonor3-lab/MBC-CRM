@@ -883,6 +883,16 @@ function renderDrawerTab(tab){
           +'</tr>';
       }).join('')}</tbody></table>`:'<div style="color:var(--t2);font-size:13px;padding:8px 0">No open positions</div>'}
     </div>
+    <div style="padding:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px;margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">Place Trade</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <input type="text" id="adminTradeSymbol" placeholder="Symbol e.g. BTC" style="padding:8px 10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:var(--text);font-family:var(--font);font-size:12px">
+        <select id="adminTradeSide" style="padding:8px 10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:var(--text);font-family:var(--font);font-size:12px"><option value="long">Long ▲</option><option value="short">Short ▼</option></select>
+        <input type="number" id="adminTradeQty" placeholder="Units" min="1" style="padding:8px 10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:var(--text);font-family:var(--font);font-size:12px">
+        <input type="number" id="adminTradePrice" placeholder="Entry price" step="0.0001" style="padding:8px 10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:var(--text);font-family:var(--font);font-size:12px">
+      </div>
+      <button class="btn btn-primary" style="font-size:12px;padding:8px 16px" onclick="placeTradeAsAdmin('${u.id}')">Place Trade</button>
+    </div>
     <div>
       <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">Recent History</div>
       ${history.map(h=>`<div class="timeline-item"><div class="timeline-dot ${h.side==='buy'||h.type==='deposit'||h.side==='credit'?'green':''}"></div><div style="flex:1"><div style="font-size:13px">${escHTML(h.label||h.type||'')} ${h.sym||''} — ${fmtMoney(h.amount)}</div><div style="font-size:11px;color:var(--t2)">${fmtTime(h.timestamp||h.time)}</div></div></div>`).join('')||'<div style="color:var(--t2);font-size:13px">No history</div>'}
@@ -1325,6 +1335,29 @@ function forceEditEntryPrice(uid,posId){
   broadcastCRMAction('position_edited',{userId:uid,positionId:posId,newEntryPrice:newPrice});
   logAudit('balance','Admin edited entry price: '+label+' → '+newPrice+' (was '+current+')',uid);
   toast('Entry price updated: '+label+' @ '+newPrice,'success');
+  renderDrawerTab('portfolio');
+}
+
+// ─── PLACE TRADE (Admin) ───
+function placeTradeAsAdmin(uid){
+  const sym=(document.getElementById('adminTradeSymbol').value||'').trim().toUpperCase();
+  const side=document.getElementById('adminTradeSide').value;
+  const qty=parseInt(document.getElementById('adminTradeQty').value)||0;
+  const price=parseFloat(document.getElementById('adminTradePrice').value)||0;
+  if(!sym){toast('Enter a symbol','error');return;}
+  if(qty<=0){toast('Enter a valid unit count','error');return;}
+  if(price<=0){toast('Enter a valid entry price','error');return;}
+  const p=getPortfolio(uid)||{positions:[],history:[],balance:0};
+  const posId='pos_'+Date.now();
+  const leverage=20;const margin=(price*qty)/leverage;
+  p.balance=Math.max(0,(p.balance||0)-margin);
+  (p.positions=p.positions||[]).push({id:posId,sym,label:sym,side,qty,entryPrice:price,entry:price,avgPrice:price,fillPrice:price,marginUsed:margin,leverage,pnl:0,openedAt:new Date().toISOString(),openedBy:'admin'});
+  (p.history=p.history||[]).unshift({type:'open',label:'OPEN '+side.toUpperCase(),sym,amount:qty*price,fillPrice:price,qty,side,marginUsed:margin,pnl:null,note:'Placed by admin',timestamp:new Date().toISOString(),time:Date.now()});
+  ls('mbc_portfolio_'+uid,p);
+  broadcastCRMAction('position_opened',{userId:uid,sym,side,qty,price,positionId:posId});
+  logAudit('balance','Admin placed '+side.toUpperCase()+' '+qty+' '+sym+' @ '+price,uid);
+  toast('Trade placed: '+side.toUpperCase()+' '+qty+' '+sym+' @ '+price,'success');
+  document.getElementById('adminTradeSymbol').value='';document.getElementById('adminTradeQty').value='';document.getElementById('adminTradePrice').value='';
   renderDrawerTab('portfolio');
 }
 
