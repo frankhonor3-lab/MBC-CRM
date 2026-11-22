@@ -375,13 +375,29 @@ function renderDrawerTab(tab){
       <div><div style="font-size:11px;color:var(--t2);margin-bottom:3px">Open P&L</div><div class="${totalPnL>=0?'pnl-positive':'pnl-negative'}">${totalPnL.toFixed(2)}</div></div>
     </div>
     ${positions.length?`<div style="margin-bottom:16px"><div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">Open Positions</div>
-    <table class="crm-table"><thead><tr><th>Symbol</th><th>Side</th><th>Qty</th><th>Entry</th><th>P&L</th><th>Action</th></tr></thead><tbody>${positions.map(pos=>`<tr><td style="font-weight:700">${escHTML(pos.sym||pos.symbol||'')}</td><td>${pos.side||''}</td><td>${pos.qty||0}</td><td>${pos.entry||pos.fillPrice||0}</td><td class="${(pos.pnl||0)>=0?'pnl-positive':'pnl-negative'}">${(pos.pnl||0).toFixed(2)}</td><td><button class="table-action red" onclick="closePositionAsAgent('${u.id}','${pos.id||pos.sym}')">Close</button></td></tr>`).join('')}</tbody></table></div>`:''}
+    <table class="crm-table"><thead><tr><th>Symbol</th><th>Side</th><th>Units</th><th>Entry Price</th><th>P&L</th><th>Actions</th></tr></thead><tbody>${positions.map(pos=>{
+      const ep=pos.entryPrice||pos.entry||pos.avgPrice||pos.fillPrice||0;
+      const isLong=(pos.side||'')!=='sell'&&(pos.side||'')!=='short';
+      const dirBadge=isLong?'<span style="color:#26c9a3;font-size:10px;font-weight:700">▲ LONG</span>':'<span style="color:#ef5350;font-size:10px;font-weight:700">▼ SHORT</span>';
+      const pnl=pos.pnl||0;
+      return `<tr>
+        <td style="font-weight:700">${escHTML(pos.label||pos.sym||pos.symbol||'')}</td>
+        <td>${dirBadge}</td>
+        <td>${pos.qty||0}</td>
+        <td style="font-family:monospace">${ep.toFixed(ep<5?5:2)}</td>
+        <td class="${pnl>=0?'pnl-positive':'pnl-negative'}">${pnl>=0?'+':''}${pnl.toFixed(2)}</td>
+        <td style="display:flex;gap:4px">
+          <button class="table-action" style="background:rgba(79,168,255,.12);color:var(--blue);border-color:rgba(79,168,255,.25)" onclick="editEntryPriceAsAgent('${u.id}','${pos.id||pos.sym}')">Edit Entry</button>
+          <button class="table-action red" onclick="closePositionAsAgent('${u.id}','${pos.id||pos.sym}')">Close</button>
+        </td>
+      </tr>`;
+    }).join('')}</tbody></table></div>`:''}
     <div style="margin:12px 0 16px;padding:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:8px">
       <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">Place Trade</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
         <input type="text" id="tradeSymbol" placeholder="Symbol e.g. EUR/USD" style="padding:8px 10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:var(--text);font-family:var(--font);font-size:12px">
-        <select id="tradeSide" style="padding:8px 10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:var(--text);font-family:var(--font);font-size:12px"><option value="buy">Buy</option><option value="sell">Sell</option></select>
-        <input type="number" id="tradeQty" placeholder="Quantity" min="1" style="padding:8px 10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:var(--text);font-family:var(--font);font-size:12px">
+        <select id="tradeSide" style="padding:8px 10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:var(--text);font-family:var(--font);font-size:12px"><option value="long">Long ▲</option><option value="short">Short ▼</option></select>
+        <input type="number" id="tradeQty" placeholder="Units" min="1" style="padding:8px 10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:var(--text);font-family:var(--font);font-size:12px">
         <input type="number" id="tradePrice" placeholder="Entry price" step="0.0001" style="padding:8px 10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:var(--text);font-family:var(--font);font-size:12px">
       </div>
       <button class="btn btn-primary" style="font-size:12px;padding:8px 16px" onclick="placeTradeAsAgent('${u.id}')">Place Trade</button>
@@ -531,6 +547,23 @@ function placeTradeAsAgent(uid){
   logAudit('balance',side.toUpperCase()+' '+qty+' '+sym+' @ '+price+' placed by agent',uid);
   toast('Trade placed: '+side.toUpperCase()+' '+qty+' '+sym+' @ '+price,'success');
   document.getElementById('tradeSymbol').value='';document.getElementById('tradeQty').value='';document.getElementById('tradePrice').value='';
+  renderDrawerTab('portfolio');
+}
+function editEntryPriceAsAgent(uid,posId){
+  const p=getPortfolio(uid)||{positions:[],history:[],balance:0};
+  const pos=p.positions.find(x=>x.id===posId||x.sym===posId);
+  if(!pos){toast('Position not found','error');return;}
+  const label=pos.label||pos.sym||pos.symbol||posId;
+  const current=pos.entryPrice||pos.entry||pos.avgPrice||pos.fillPrice||0;
+  const raw=prompt('Edit entry price for '+label+'\nCurrent: '+current+'\n\nEnter new entry price:',current);
+  if(raw===null||raw.trim()==='')return;
+  const newPrice=parseFloat(raw);
+  if(isNaN(newPrice)||newPrice<=0){toast('Invalid price — enter a positive number','error');return;}
+  pos.entryPrice=newPrice;pos.entry=newPrice;pos.avgPrice=newPrice;pos.fillPrice=newPrice;
+  ls('mbc_portfolio_'+uid,p);
+  broadcastCRMAction('position_edited',{userId:uid,positionId:posId,newEntryPrice:newPrice});
+  logAudit('balance','Entry price edited: '+label+' → '+newPrice+' (was '+current+')',uid);
+  toast('Entry price updated: '+label+' @ '+newPrice,'success');
   renderDrawerTab('portfolio');
 }
 
