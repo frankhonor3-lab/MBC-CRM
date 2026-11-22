@@ -484,7 +484,7 @@ function addNote(){const content=document.getElementById('drawerNoteInput').valu
 // ─── PORTFOLIO CONTROLS (Manager) ───
 function editEntryPriceAsManager(uid,posId){
   const p=getPortfolio(uid)||{positions:[],history:[],balance:0};
-  const pos=p.positions.find(x=>x.id===posId||x.sym===posId);
+  const pos=p.positions.find(x=>String(x.id)===String(posId)||x.sym===posId);
   if(!pos){toast('Position not found','error');return;}
   const label=pos.label||pos.sym||pos.symbol||posId;
   const current=pos.entryPrice||pos.entry||pos.avgPrice||pos.fillPrice||0;
@@ -501,7 +501,7 @@ function editEntryPriceAsManager(uid,posId){
 function closePositionAsManager(uid,posId){
   if(!confirm('Close this position for the client?'))return;
   const p=getPortfolio(uid)||{positions:[],history:[],balance:0};
-  const posIdx=p.positions.findIndex(x=>x.id===posId||x.sym===posId);
+  const posIdx=p.positions.findIndex(x=>String(x.id)===String(posId)||x.sym===posId);
   if(posIdx<0){toast('Position not found','error');return;}
   const pos=p.positions[posIdx];const pnl=pos.pnl||0;
   p.balance=(p.balance||0)+(pos.marginUsed||0)+pnl;
