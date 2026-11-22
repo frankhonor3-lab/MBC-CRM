@@ -394,17 +394,20 @@ function renderDrawerTab(tab){
     </div>
     ${positions.length?`<div style="margin-bottom:16px">
       <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px">Open Positions</div>
-      <table class="crm-table"><thead><tr><th>Symbol</th><th>Direction</th><th>Units</th><th>Entry Price</th><th>P&L</th><th>Actions</th></tr></thead>
+      <table class="crm-table"><thead><tr><th>Symbol</th><th>Direction</th><th>Units</th><th>Entry Price</th><th>Market</th><th>P&L</th><th>Actions</th></tr></thead>
       <tbody>${positions.map(pos=>{
         const ep=pos.entryPrice||pos.entry||pos.avgPrice||pos.fillPrice||0;
         const isLong=(pos.side||'')!=='sell'&&(pos.side||'')!=='short';
         const dirBadge=isLong?'<span style="color:#26c9a3;font-size:10px;font-weight:700">▲ LONG</span>':'<span style="color:#ef5350;font-size:10px;font-weight:700">▼ SHORT</span>';
-        const pnl=pos.pnl||0;
+        const sym=pos.label||pos.sym||pos.symbol||'';
+        const mkt=(window.CRM_PRICE_MAP&&window.CRM_PRICE_MAP[sym])||ep;
+        const pnl=isLong?(mkt-ep)*(pos.qty||0):(ep-mkt)*(pos.qty||0);
         return '<tr>'
-          +'<td style="font-weight:700">'+escHTML(pos.label||pos.sym||pos.symbol||'')+'</td>'
+          +'<td style="font-weight:700">'+escHTML(sym)+'</td>'
           +'<td>'+dirBadge+'</td>'
           +'<td>'+(pos.qty||0)+'</td>'
           +'<td style="font-family:monospace">'+ep.toFixed(ep<5?5:2)+'</td>'
+          +'<td style="font-family:monospace;color:var(--t2)">'+(window.crmFmtPrice?window.crmFmtPrice(mkt):mkt.toFixed(2))+'</td>'
           +'<td class="'+(pnl>=0?'pnl-positive':'pnl-negative')+'">'+(pnl>=0?'+':'')+pnl.toFixed(2)+'</td>'
           +'<td style="display:flex;gap:4px">'
           +'<button class="table-action" style="background:rgba(79,168,255,.12);color:var(--blue);border-color:rgba(79,168,255,.25)" onclick="editEntryPriceAsRetManager(\''+u.id+'\',\''+(pos.id||pos.sym)+'\')">Edit Entry</button>'
@@ -530,6 +533,13 @@ if(currentStaff){
   crmBC.onmessage=function(e){if(e.data&&e.data.action){const active=document.querySelector('.section.active');if(active){const id=active.id.replace('sec-','');const r={dashboard:renderDashboard,clients:renderClients,dormant:renderDormant,reassign:renderReassign,calls:renderCalls};if(r[id])r[id]();}}};
   renderDashboard();
 }
+// ── Live drawer refresh (portfolio tab) ──────────────────────
+setInterval(function(){
+  if(typeof currentDrawerClient==='undefined'||!currentDrawerClient)return;
+  var active=document.querySelector('.crm-drawer-tab.active');
+  if(active&&active.textContent.trim()==='Portfolio')renderDrawerTab('portfolio');
+},5000);
 </script>
+<script src="prices.js"></script>
 </body>
 </html>
